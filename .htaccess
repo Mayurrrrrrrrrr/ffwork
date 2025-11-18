@@ -1,0 +1,30 @@
+--- PHP VALUES FROM INFINITYFREE ---
+
+php_value display_errors On
+php_value mbstring.http_input auto
+php_value date.timezone Asia/Calcutta
+
+--- CUSTOM ERROR PAGES FROM INFINITYFREE ---
+
+ErrorDocument 403 https://errors.infinityfree.net/errors/403/
+ErrorDocument 404 https://errors.infinityfree.net/errors/404/
+ErrorDocument 500 https://errors.infinityfree.net/errors/500/
+
+--- FORCE ALL TRAFFIC TO HTTPS (FIXES "DANGEROUS SITE" WARNING) ---
+
+This is the single most important rule to add.
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteCond %{HTTPS} off
+# CORRECTED SYNTAX: Removed all invalid backslashes
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+</IfModule>
+
+--- DEFAULT DIRECTORY INDEX ---
+
+DirectoryIndex index.php index.html index.htm index2.html login.php
+
+NOTE: I have temporarily removed other security rules (like <Files>)
+
+to ensure the server does not crash.
