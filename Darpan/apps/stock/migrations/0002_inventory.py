@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
             options={
                 'verbose_name_plural': 'Inventory',
                 'db_table': 'stock_inventory',
-                'indexes': [models.Index(fields=['company', 'product'], name='stock_inven_company_413ffe_idx'), models.Index(fields=['store', 'product'], name='stock_inven_store_i_ad7f0f_idx')],
+                'indexes': [models.Index(fields=['company', 'product'], name='stock_inven_company_413ffe_idx')],
                 'unique_together': {('store', 'product')},
             },
         ),

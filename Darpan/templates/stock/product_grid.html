@@ -1,0 +1,421 @@
+{% extends "base/base.html" %}
+
+{% block title %}Product Search{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .search-hero {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+        padding: 2rem;
+        border-radius: var(--radius-xl);
+        margin-bottom: 2rem;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 1rem 1.5rem;
+        border: none;
+        border-radius: var(--radius-lg);
+        font-size: 1.1rem;
+        box-shadow: var(--shadow-lg);
+    }
+
+    .filters-sidebar {
+        background: white;
+        padding: 1.5rem;
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-md);
+        position: sticky;
+        top: 1rem;
+        max-height: calc(100vh - 2rem);
+        overflow-y: auto;
+    }
+
+    .filter-group {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .filter-group:last-child {
+        border-bottom: none;
+    }
+
+    .filter-checkbox label {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        cursor: pointer;
+        transition: background var(--transition-fast);
+        border-radius: var(--radius-sm);
+    }
+
+    .filter-checkbox label:hover {
+        background: #f9fafb;
+    }
+
+    .products-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .product-card {
+        background: white;
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-md);
+        transition: all var(--transition-base);
+    }
+
+    .product-card:hover {
+        box-shadow: var(--shadow-lg);
+        transform: translateY(-4px);
+    }
+
+    .product-image {
+        position: relative;
+        padding-top: 100%;
+        background: #f3f4f6;
+        overflow: hidden;
+    }
+
+    .product-image img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .product-badges {
+        position: absolute;
+        top: 0.75rem;
+        left: 0.75rem;
+        display: flex;
+        gap: 0.5rem;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: var(--radius-full);
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .badge.new {
+        background: var(--success);
+        color: white;
+    }
+
+    .badge.featured {
+        background: var(--warning);
+        color: white;
+    }
+
+    .quick-actions {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(10px);
+        display: flex;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        transform: translateY(100%);
+        transition: transform var(--transition-base);
+    }
+
+    .product-card:hover .quick-actions {
+        transform: translateY(0);
+    }
+
+    .quick-actions button {
+        flex: 1;
+        padding: 0.5rem;
+        border: none;
+        background: white;
+        color: #1f2937;
+        border-radius: var(--radius-md);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.25rem;
+        font-size: 0.875rem;
+        transition: all var(--transition-fast);
+    }
+
+    .quick-actions button:hover {
+        background: var(--primary);
+        color: white;
+    }
+
+    .product-info {
+        padding: 1rem;
+    }
+
+    .product-name {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+
+    .product-meta {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .product-meta span {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        background: #f3f4f6;
+        border-radius: var(--radius-sm);
+    }
+
+    .product-price {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--primary);
+        margin-bottom: 0.5rem;
+    }
+
+    .stock-locations {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .location-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        background: rgba(16, 185, 129, 0.1);
+        color: var(--success);
+        border-radius: var(--radius-sm);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4" x-data="productSearch()">
+    <!-- Search Hero -->
+    <div class="search-hero">
+        <h2 class="text-white mb-3">Product Search</h2>
+        <form method="get" action="">
+            <input type="text" name="q" class="search-input"
+                placeholder="Search 1,000+ products by name, SKU, or style code..." value="{{ current_filters.q }}"
+                @input.debounce.300ms="$el.form.submit()">
+        </form>
+    </div>
+
+    <div class="row g-4">
+        <!-- Filters Sidebar -->
+        <div class="col-lg-3">
+            <div class="filters-sidebar">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Filters</h5>
+                    <a href="{% url 'stock:product_search' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                </div>
+
+                <!-- Category Filter -->
+                {% if facets.categories %}
+                <div class="filter-group">
+                    <h6 class="fw-bold mb-2">Category</h6>
+                    <div class="filter-options">
+                        {% for cat in facets.categories %}
+                        {% if cat.category %}
+                        <div class="filter-checkbox">
+                            <label>
+                                <input type="checkbox" name="category" value="{{ cat.category }}" {% if
+                                    current_filters.category==cat.category %}checked{% endif %}
+                                    @change="applyFilter('category', '{{ cat.category }}')">
+                                <span class="ms-2">{{ cat.category }} ({{ cat.count }})</span>
+                            </label>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Metal Filter -->
+                {% if facets.metals %}
+                <div class="filter-group">
+                    <h6 class="fw-bold mb-2">Metal Type</h6>
+                    <div class="filter-options">
+                        {% for metal in facets.metals %}
+                        {% if metal.base_metal %}
+                        <div class="filter-checkbox">
+                            <label>
+                                <input type="checkbox" name="metal" value="{{ metal.base_metal }}" {% if
+                                    current_filters.metal==metal.base_metal %}checked{% endif %}
+                                    @change="applyFilter('metal', '{{ metal.base_metal }}')">
+                                <span class="ms-2">{{ metal.base_metal }} ({{ metal.count }})</span>
+                            </label>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Price Range -->
+                <div class="filter-group">
+                    <h6 class="fw-bold mb-2">Price Range</h6>
+                    {% for range in facets.price_ranges %}
+                    <div class="filter-checkbox">
+                        <label>
+                            <input type="radio" name="price_range" value="{{ range.min }}-{{ range.max }}">
+                            <span class="ms-2">{{ range.label }}</span>
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <strong>{{ page_obj.paginator.count }}</strong> products found
+                </div>
+                <div>
+                    <select class="form-select" name="sort" @change="applySort($event.target.value)">
+                        <option value="-trending_score" {% if current_filters.sort=='-trending_score' %}selected{% endif
+                            %}>Trending</option>
+                        <option value="name" {% if current_filters.sort=='name' %}selected{% endif %}>Name (A-Z)
+                        </option>
+                        <option value="-sale_price" {% if current_filters.sort=='-sale_price' %}selected{% endif %}>
+                            Price (High to Low)</option>
+                        <option value="sale_price" {% if current_filters.sort=='sale_price' %}selected{% endif %}>Price
+                            (Low to High)</option>
+                        <option value="-created_at" {% if current_filters.sort=='-created_at' %}selected{% endif %}>
+                            Newest First</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="products-grid">
+                {% for product in products %}
+                <div class="product-card">
+                    <div class="product-image">
+                        {% if product.images.all %}
+                        <img src="{{ product.images.first.image_url }}" alt="{{ product.name }}" loading="lazy">
+                        {% else %}
+                        <div class="d-flex align-items-center justify-content-center h-100">
+                            <i data-lucide="package" style="width:64px; height:64px; color:#9ca3af;"></i>
+                        </div>
+                        {% endif %}
+
+                        <div class="product-badges">
+                            {% if product.is_new_arrival %}
+                            <span class="badge new">New</span>
+                            {% endif %}
+                            {% if product.is_featured %}
+                            <span class="badge featured">Featured</span>
+                            {% endif %}
+                        </div>
+
+                        <div class="quick-actions">
+                            <button @click="requestTransfer({{ product.id }})">
+                                <i data-lucide="truck" style="width:14px; height:14px;"></i>
+                                Transfer
+                            </button>
+                            <button @click="viewDetails({{ product.id }})">
+                                <i data-lucide="eye" style="width:14px; height:14px;"></i>
+                                View
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="product-info">
+                        <h3 class="product-name">{{ product.name }}</h3>
+                        <div class="product-meta">
+                            <span>{{ product.style_code }}</span>
+                            {% if product.base_metal %}<span>{{ product.base_metal }}</span>{% endif %}
+                        </div>
+                        <div class="product-price">
+                            ₹{{ product.sale_price|floatformat:0 }}
+                        </div>
+
+                        <div class="stock-locations">
+                            {% for inv in product.inventory_entries.all %}
+                            <span class="location-badge">
+                                {{ inv.store.name }}: {{ inv.quantity }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <i data-lucide="search-x" class="text-muted mb-3" style="width:64px; height:64px;"></i>
+                    <p class="text-muted">No products found. Try adjusting your filters.</p>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('productSearch', () => ({
+            applyFilter(filterName, value) {
+                const url = new URL(window.location.href);
+                url.searchParams.set(filterName, value);
+                window.location.href = url.toString();
+            },
+
+            applySort(sort) {
+                const url = new URL(window.location.href);
+                url.searchParams.set('sort', sort);
+                window.location.href = url.toString();
+            },
+
+            requestTransfer(productId) {
+                // Redirect to transfer create with product pre-selected
+                window.location.href = `/stock/transfers/create/?product=${productId}`;
+            },
+
+            viewDetails(productId) {
+                // Open product details in modal or new page
+                alert('Product details for ID: ' + productId);
+            }
+        }));
+    });
+</script>
+{% endblock %}

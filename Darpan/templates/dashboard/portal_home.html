@@ -8,84 +8,73 @@
 
 {% block extra_css %}
 <style>
-    :root {
-        --accent-primary: #0d6efd;
-        --accent-success: #198754;
-        --accent-info: #0dcaf0;
-        --accent-warning: #ffc107;
-        --accent-danger: #dc3545;
-        --accent-secondary: #6c757d;
-
-        --accent-primary-light: rgba(13, 110, 253, 0.1);
-        --accent-success-light: rgba(25, 135, 84, 0.1);
-        --accent-info-light: rgba(13, 202, 240, 0.1);
-        --accent-warning-light: rgba(255, 193, 7, 0.1);
-        --accent-danger-light: rgba(220, 53, 69, 0.1);
-    }
-
-    .portal-icon-grid .portal-card-small {
+    .portal-card-small {
         text-align: center;
         padding: 1.5rem 1rem;
-        transition: all 0.2s;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: pointer;
         text-decoration: none;
         display: block;
     }
 
-    .portal-icon-grid .portal-card-small:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1) !important;
+    .portal-card-small:hover {
+        text-decoration: none;
     }
 
     .portal-icon {
-        width: 48px;
-        height: 48px;
-        padding: 10px;
-        border-radius: 0.75rem;
+        width: 56px;
+        height: 56px;
+        padding: 12px;
+        border-radius: var(--radius-lg);
         margin: 0 auto 0.75rem;
-        display: block;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .bg-primary-light {
-        background-color: var(--accent-primary-light);
+        background-color: rgba(99, 102, 241, 0.1);
     }
 
     .bg-success-light {
-        background-color: var(--accent-success-light);
+        background-color: rgba(16, 185, 129, 0.1);
     }
 
     .bg-info-light {
-        background-color: var(--accent-info-light);
+        background-color: rgba(13, 202, 240, 0.1);
     }
 
     .bg-warning-light {
-        background-color: var(--accent-warning-light);
+        background-color: rgba(245, 158, 11, 0.1);
     }
 
     .bg-danger-light {
-        background-color: var(--accent-danger-light);
+        background-color: rgba(239, 68, 68, 0.1);
+    }
+
+    .bg-secondary-light {
+        background-color: rgba(139, 92, 246, 0.1);
     }
 
     .celebration-card-body {
         max-height: 250px;
         overflow-y: auto;
     }
-
-    .list-group-item-action:hover {
-        transform: translateX(4px);
-    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid mt-4">
+<div class="container-fluid mt-4" x-data="dashboardHome()">
     <!-- Welcome Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2">Welcome, {{ user.get_short_name }}!</h1>
+        <div>
+            <h1 class="h2 mb-1">Welcome, <span class="text-gradient">{{ user.get_short_name }}</span>!</h1>
+            <p class="text-muted">Here's what's happening with your workspace today.</p>
+        </div>
         {% if total_pending_actions > 0 %}
-        <span class="badge bg-danger p-2 rounded-pill">
+        <span class="badge bg-danger p-2 rounded-pill d-flex align-items-center gap-2">
             <i data-lucide="bell" style="width:16px; height:16px;"></i>
-            {{ total_pending_actions }} Pending Action{{ total_pending_actions|pluralize }}
+            <span>{{ total_pending_actions }} Pending Action{{ total_pending_actions|pluralize }}</span>
         </span>
         {% endif %}
     </div>
@@ -93,9 +82,51 @@
     <div class="row g-4">
         <!-- Main Column -->
         <div class="col-lg-8">
+            <!-- Quick Stats KPI Cards -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4 col-sm-6">
+                    <div class="kpi-card">
+                        <div class="kpi-icon">📊</div>
+                        <div class="kpi-label">Total Revenue</div>
+                        <div class="kpi-value counter" x-text="formatCurrency(stats.revenue)">₹0</div>
+                        <div class="kpi-change positive">
+                            <i data-lucide="trending-up" style="width:14px; height:14px;"></i>
+                            <span>12.5%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <div class="kpi-card">
+                        <div class="kpi-icon">✅</div>
+                        <div class="kpi-label">Tasks Complete</div>
+                        <div class="kpi-value counter" x-text="stats.tasksComplete">0</div>
+                        <div class="kpi-change positive">
+                            <i data-lucide="trending-up" style="width:14px; height:14px;"></i>
+                            <span>8.3%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4 col-sm-6">
+                    <div class="kpi-card">
+                        <div class="kpi-icon">📦</div>
+                        <div class="kpi-label">Active Orders</div>
+                        <div class="kpi-value counter" x-text="stats.activeOrders">0</div>
+                        <div class="kpi-change negative">
+                            <i data-lucide="trending-down" style="width:14px; height:14px;"></i>
+                            <span>2.1%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Pending Actions -->
-            <h4 class="mb-3">Pending Actions</h4>
-            <div class="card mb-4">
+            <h4 class="mb-3 fw-semibold">
+                <i data-lucide="alert-circle" class="me-2" style="width:20px; height:20px;"></i>
+                Pending Actions
+            </h4>
+            <div class="card-modern mb-4">
                 <div class="card-body p-0">
                     <div class="list-group list-group-flush">
                         {% if total_pending_actions == 0 %}
@@ -116,47 +147,56 @@
             </div>
 
             <!-- Main Portals -->
-            <h4 class="mb-3 mt-4">Main Portals</h4>
+            <h4 class="mb-3 fw-semibold">
+                <i data-lucide="grid" class="me-2" style="width:20px; height:20px;"></i>
+                Main Portals
+            </h4>
             <div class="row g-3 portal-icon-grid">
                 <div class="col-md-4 col-6">
-                    <a href="{% url 'expenses:list' %}" class="card portal-card-small">
+                    <a href="{% url 'expenses:list' %}" class="card-modern hover-lift portal-card-small">
                         <i data-lucide="credit-card" class="portal-icon text-primary bg-primary-light"></i>
                         <div class="fw-bold text-dark">Expenses</div>
+                        <small class="text-muted">Manage expenses</small>
                     </a>
                 </div>
 
                 <div class="col-md-4 col-6">
-                    <a href="{% url 'btl:list' %}" class="card portal-card-small">
+                    <a href="{% url 'btl:list' %}" class="card-modern hover-lift portal-card-small">
                         <i data-lucide="megaphone" class="portal-icon text-success bg-success-light"></i>
                         <div class="fw-bold text-dark">BTL Marketing</div>
+                        <small class="text-muted">Marketing campaigns</small>
                     </a>
                 </div>
 
                 <div class="col-md-4 col-6">
-                    <a href="{% url 'learning:catalog' %}" class="card portal-card-small">
+                    <a href="{% url 'learning:catalog' %}" class="card-modern hover-lift portal-card-small">
                         <i data-lucide="graduation-cap" class="portal-icon text-info bg-info-light"></i>
                         <div class="fw-bold text-dark">Learning</div>
+                        <small class="text-muted">Training & courses</small>
                     </a>
                 </div>
 
                 <div class="col-md-4 col-6">
-                    <a href="{% url 'purchasing:po_list' %}" class="card portal-card-small">
+                    <a href="{% url 'purchasing:po_list' %}" class="card-modern hover-lift portal-card-small">
                         <i data-lucide="shopping-cart" class="portal-icon text-warning bg-warning-light"></i>
                         <div class="fw-bold text-dark">Purchasing</div>
+                        <small class="text-muted">Purchase orders</small>
                     </a>
                 </div>
 
                 <div class="col-md-4 col-6">
-                    <a href="{% url 'tasks:list' %}" class="card portal-card-small">
+                    <a href="{% url 'tasks:list' %}" class="card-modern hover-lift portal-card-small">
                         <i data-lucide="list-checks" class="portal-icon text-secondary bg-secondary-light"></i>
                         <div class="fw-bold text-dark">Tasks</div>
+                        <small class="text-muted">Task management</small>
                     </a>
                 </div>
 
                 <div class="col-md-4 col-6">
-                    <a href="{% url 'reports:dashboard' %}" class="card portal-card-small">
+                    <a href="{% url 'reports:dashboard' %}" class="card-modern hover-lift portal-card-small">
                         <i data-lucide="bar-chart-2" class="portal-icon text-danger bg-danger-light"></i>
                         <div class="fw-bold text-dark">Reports</div>
+                        <small class="text-muted">Analytics & insights</small>
                     </a>
                 </div>
             </div>
@@ -168,7 +208,7 @@
             <div class="card mb-4">
                 <div class="card-header bg-white d-flex align-items-center">
                     <i data-lucide="cake" class="me-2 text-primary"></i>
-                    <h5 class="mb-0">Birthdays ({{ birthdays_today|length|add:birthdays_this_month|length }})</h5>
+                    <h5 class="mb-0">Birthdays ({{ total_birthdays }})</h5>
                 </div>
                 <div class="card-body celebration-card-body">
                     {% if not birthdays_today and not birthdays_this_month %}
@@ -206,8 +246,7 @@
             <div class="card mb-4">
                 <div class="card-header bg-white d-flex align-items-center">
                     <i data-lucide="award" class="me-2 text-success"></i>
-                    <h5 class="mb-0">Work Anniversaries ({{
-                        anniversaries_today|length|add:anniversaries_this_month|length }})</h5>
+                    <h5 class="mb-0">Work Anniversaries ({{ total_anniversaries }})</h5>
                 </div>
                 <div class="card-body celebration-card-body">
                     {% if not anniversaries_today and not anniversaries_this_month %}
@@ -266,4 +305,30 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('dashboardHome', () => ({
+            stats: {
+                revenue: 1245000,
+                tasksComplete: 24,
+                activeOrders: 15
+            },
+
+            formatCurrency(value) {
+                return '₹' + value.toLocaleString('en-IN');
+            },
+
+            init() {
+                // Animate numbers on load
+                this.animateNumbers();
+            },
+
+            animateNumbers() {
+                // Simple counter animation can be added here
+                console.log('Dashboard initialized');
+            }
+        }));
+    });
+</script>
 {% endblock %}

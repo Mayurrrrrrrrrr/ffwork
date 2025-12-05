@@ -17,11 +17,21 @@ class Product(models.Model):
     category = models.CharField(max_length=100, blank=True)
     unit = models.CharField(max_length=20, default='pcs', help_text="e.g., pcs, box, kg")
     
-    # New fields for Advanced Product Finder
-    style_code = models.CharField(max_length=100, blank=True)
+    # Advanced Product Finder fields
+    style_code = models.CharField(max_length=100, blank=True, db_index=True)
     base_metal = models.CharField(max_length=50, blank=True)
     size = models.CharField(max_length=50, blank=True)
     sale_price = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    
+    # E-commerce enhancements
+    seo_title = models.CharField(max_length=200, blank=True)
+    seo_description = models.TextField(blank=True)
+    tags = models.JSONField(default=list, blank=True)  # ['trending', 'wedding', 'bridal']
+    
+    # Rich metadata
+    is_featured = models.BooleanField(default=False)
+    is_new_arrival = models.BooleanField(default=False)
+    trending_score = models.IntegerField(default=0, help_text="For recommendation engine")
     
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -29,11 +39,57 @@ class Product(models.Model):
     
     class Meta:
         db_table = 'stock_products'
-        ordering = ['name']
+        ordering = ['-trending_score', 'name']
         unique_together = ['company', 'sku']
+        indexes = [
+            models.Index(fields=['company', '-trending_score', '-created_at']),
+            models.Index(fields=['company', 'style_code']),
+            models.Index(fields=['company', 'category']),
+        ]
     
     def __str__(self):
         return f"{self.name} ({self.sku})"
+
+
+class ProductImage(models.Model):
+    """
+    Product images for e-commerce display.
+    """
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='images')
+    image_url = models.URLField(help_text="S3 URL or media path")
+    is_primary = models.BooleanField(default=False)
+    alt_text = models.CharField(max_length=200, blank=True)
+    display_order = models.IntegerField(default=0)
+    
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'stock_product_images'
+        ordering = ['display_order', 'id']
+        indexes = [
+            models.Index(fields=['product', 'display_order']),
+        ]
+    
+    def __str__(self):
+        return f"Image for {self.product.name}"
+
+
+class ProductAttribute(models.Model):
+    """
+    Dynamic attributes for jewelry products.
+    Examples: Diamond Quality, Gemstone Type, etc.
+    """
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='attributes')
+    attribute_name = models.CharField(max_length=50)  # 'Diamond Quality', 'Gemstone Type'
+    attribute_value = models.CharField(max_length=100)
+    
+    class Meta:
+        db_table = 'stock_product_attributes'
+        unique_together = ['product', 'attribute_name']
+    
+    def __str__(self):
+        return f"{self.product.name}: {self.attribute_name} = {self.attribute_value}"
+
 
 class StockTransfer(models.Model):
     """

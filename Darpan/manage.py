@@ -3,6 +3,11 @@
 import os
 import sys
 
+try:
+    import oracledb
+    sys.modules["cx_Oracle"] = oracledb
+except ImportError:
+    pass
 
 def main():
     """Run administrative tasks."""

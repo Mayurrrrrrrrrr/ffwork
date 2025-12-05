@@ -1,0 +1,236 @@
+{% extends "base/base.html" %}
+{% load humanize %}
+
+{% block title %}Advanced Analytics Dashboard{% endblock %}
+
+{% block content %}
+<div class="analytics-dashboard p-6 space-y-6" x-data="advancedDashboard">
+    <!-- Header -->
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Analytics Overview</h1>
+            <p class="text-gray-500 dark:text-gray-400">Real-time insights into your business performance</p>
+        </div>
+        <div class="flex gap-2">
+            <button class="btn btn-secondary" @click="window.location.reload()">
+                <i data-lucide="refresh-cw" class="w-4 h-4 mr-2"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- KPI Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Revenue -->
+        <div
+            class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Revenue</p>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mt-2">₹{{ total_revenue|intcomma }}</h3>
+                </div>
+                <div class="p-2 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <i data-lucide="indian-rupee" class="w-6 h-6 text-green-600 dark:text-green-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transactions -->
+        <div
+            class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Transactions</p>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ total_transactions|intcomma }}
+                    </h3>
+                </div>
+                <div class="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <i data-lucide="shopping-bag" class="w-6 h-6 text-blue-600 dark:text-blue-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Gross Weight -->
+        <div
+            class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Gross Weight</p>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ gross_weight|floatform:3 }} g
+                    </h3>
+                </div>
+                <div class="p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                    <i data-lucide="scale" class="w-6 h-6 text-amber-600 dark:text-amber-400"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Net Weight -->
+        <div
+            class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Net Weight</p>
+                    <h3 class="text-2xl font-bold text-gray-900 dark:text-white mt-2">{{ net_weight|floatform:3 }} g
+                    </h3>
+                </div>
+                <div class="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <i data-lucide="gem" class="w-6 h-6 text-purple-600 dark:text-purple-400"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Monthly Trend (Line) -->
+        <div
+            class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-2">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Revenue Trend</h3>
+            <div class="h-80">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Category Distribution (Pie) -->
+        <div
+            class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Sales by Category</h3>
+            <div class="h-80">
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Metal Distribution (Doughnut) -->
+        <div
+            class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Sales by Metal</h3>
+            <div class="h-80">
+                <canvas id="metalChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Top Products (Bar) -->
+        <div
+            class="card p-6 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-2">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top 10 Selling Products</h3>
+            <div class="h-80">
+                <canvas id="productChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions Table -->
+    <div
+        class="card bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+        <div class="p-6 border-b border-gray-100 dark:border-gray-700">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Recent High-Value Transactions</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-500 dark:text-gray-400">
+                <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs uppercase text-gray-700 dark:text-gray-300">
+                    <tr>
+                        <th class="px-6 py-3">Transaction No</th>
+                        <th class="px-6 py-3">Date</th>
+                        <th class="px-6 py-3">Customer</th>
+                        <th class="px-6 py-3">Product</th>
+                        <th class="px-6 py-3 text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for txn in recent_transactions %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">{{ txn.transaction_no }}</td>
+                        <td class="px-6 py-4">{{ txn.transaction_date }}</td>
+                        <td class="px-6 py-4">{{ txn.client_name }}</td>
+                        <td class="px-6 py-4">{{ txn.product_name }}</td>
+                        <td class="px-6 py-4 text-right font-medium text-gray-900 dark:text-white">₹{{
+                            txn.revenue|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-4 text-center">No transactions found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('advancedDashboard', () => ({
+            init() {
+                this.initCharts();
+            },
+            initCharts() {
+                // Trend Chart
+                new Chart(document.getElementById('trendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: {{ trend_labels| safe }
+        },
+            datasets: [{
+                label: 'Revenue',
+                data: {{ trend_values| safe }},
+        borderColor: '#6366f1',
+        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+        fill: true,
+        tension: 0.4
+                    }]
+                },
+        options: { responsive: true, maintainAspectRatio: false }
+            });
+
+    // Category Chart
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'pie',
+        data: {
+            labels: {{ category_labels| safe }},
+        datasets: [{
+            data: {{ category_values| safe }},
+        backgroundColor: ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#8b5cf6']
+                    }]
+                },
+        options: { responsive: true, maintainAspectRatio: false }
+            });
+
+    // Metal Chart
+    new Chart(document.getElementById('metalChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ metal_labels| safe }},
+        datasets: [{
+            data: {{ metal_values| safe }},
+        backgroundColor: ['#f59e0b', '#9ca3af', '#ef4444']
+                    }]
+                },
+        options: { responsive: true, maintainAspectRatio: false }
+            });
+
+    // Product Chart
+    new Chart(document.getElementById('productChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ product_labels| safe }},
+        datasets: [{
+            label: 'Revenue',
+            data: {{ product_values| safe }},
+        backgroundColor: '#10b981'
+                    }]
+                },
+        options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y'
+    }
+            });
+        }
+    }));
+});
+</script>
+{% endblock %}

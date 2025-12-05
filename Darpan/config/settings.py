@@ -94,18 +94,21 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': config('DB_NAME', default='darpan_db'),
-        'USER': config('DB_USER', default='root'),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='3306'),
+        'ENGINE': 'django.db.backends.oracle',
+        'NAME': 'darpan_high',
+        'USER': config('ORACLE_DB_USER', default='admin'),
+        'PASSWORD': config('ORACLE_DB_PASSWORD', default=''),
         'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        }
+            'wallet_location': BASE_DIR / 'wallet',
+            'config_dir': BASE_DIR / 'wallet',
+            'wallet_password': config('ORACLE_WALLET_PASSWORD', default=None),
+        },
     }
 }
+
+# Set TNS_ADMIN for Oracle wallet
+import os
+os.environ['TNS_ADMIN'] = str(BASE_DIR / 'wallet')
 
 
 # Custom User Model

@@ -11,29 +11,45 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
                 {% if user.is_authenticated %}
+                <!-- Direct Links for Key Modules -->
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'analytics:dashboard' %}">
+                        <i data-lucide="bar-chart-2" style="width:16px;height:16px;" class="me-1"></i> Analytics
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'stock:product_list' %}">
+                        <i data-lucide="box" style="width:16px;height:16px;" class="me-1"></i> Stock
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'expenses:list' %}">
+                        <i data-lucide="receipt" style="width:16px;height:16px;" class="me-1"></i> Expenses
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{% url 'tasks:list' %}">
+                        <i data-lucide="check-square" style="width:16px;height:16px;" class="me-1"></i> Tasks
+                    </a>
+                </li>
+
+                <!-- More Modules Dropdown -->
                 <li class="nav-item dropdown me-3">
                     <a class="nav-link dropdown-toggle" href="#" id="modulesDropdown" role="button"
                         data-bs-toggle="dropdown">
-                        <i data-lucide="grid" style="width:16px;height:16px;" class="me-1"></i> Modules
+                        More
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'expenses:list' %}">
-                                <i data-lucide="receipt" style="width:14px;height:14px;" class="me-2"></i> Expenses
-                            </a></li>
                         <li><a class="dropdown-item" href="{% url 'btl:list' %}">
                                 <i data-lucide="megaphone" style="width:14px;height:14px;" class="me-2"></i> BTL
                                 Marketing
                             </a></li>
                         <li><a class="dropdown-item" href="{% url 'learning:catalog' %}">
                                 <i data-lucide="book-open" style="width:14px;height:14px;" class="me-2"></i> Learning
-                                (LMS)
                             </a></li>
                         <li><a class="dropdown-item" href="{% url 'purchasing:po_list' %}">
                                 <i data-lucide="shopping-cart" style="width:14px;height:14px;" class="me-2"></i>
-                                Purchase Orders
-                            </a></li>
-                        <li><a class="dropdown-item" href="{% url 'tasks:list' %}">
-                                <i data-lucide="check-square" style="width:14px;height:14px;" class="me-2"></i> Tasks
+                                Purchasing
                             </a></li>
                         <li><a class="dropdown-item" href="{% url 'stock:transfer_list' %}">
                                 <i data-lucide="truck" style="width:14px;height:14px;" class="me-2"></i> Stock Transfers
@@ -42,17 +58,13 @@
                             <hr class="dropdown-divider">
                         </li>
                         <li><a class="dropdown-item" href="{% url 'reports:dashboard' %}">
-                                <i data-lucide="bar-chart-2" style="width:14px;height:14px;" class="me-2"></i> Reports
+                                <i data-lucide="file-text" style="width:14px;height:14px;" class="me-2"></i> Reports
                             </a></li>
                         <li><a class="dropdown-item" href="{% url 'tools:index' %}">
                                 <i data-lucide="tool" style="width:14px;height:14px;" class="me-2"></i> Tools
                             </a></li>
                         <li><a class="dropdown-item" href="{% url 'referrals:list' %}">
                                 <i data-lucide="users" style="width:14px;height:14px;" class="me-2"></i> Referrals
-                            </a></li>
-                        <li><a class="dropdown-item" href="{% url 'analytics:dashboard' %}">
-                                <i data-lucide="bar-chart-2" style="width:14px;height:14px;" class="me-2"></i> Sales
-                                Analytics
                             </a></li>
                         {% if request.user.is_superuser or 'admin' in request.user.get_role_names %}
                         <li>

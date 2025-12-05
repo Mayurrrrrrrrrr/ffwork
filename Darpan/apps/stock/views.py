@@ -9,10 +9,10 @@ from django.views.generic import ListView, DetailView, CreateView, View
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Q
+from django.db.models import Q, Count, Prefetch
 from django.db import transaction
 
-from .models import Product, StockTransfer, TransferItem, Inventory
+from .models import Product, StockTransfer, TransferItem, Inventory, ProductImage, ProductAttribute
 from .forms import ProductForm, StockTransferForm, TransferItemFormSet, ReceiveFormSet
 from apps.core.utils import log_audit_action
 
@@ -36,6 +36,98 @@ class ProductCreateView(LoginRequiredMixin, CreateView):
         form.instance.company = self.request.user.company
         messages.success(self.request, "Product created successfully.")
         return super().form_valid(form)
+
+
+class AdvancedProductSearchView(LoginRequiredMixin, ListView):
+    """
+    E-commerce grade product search with faceted filters and sorting.
+    """
+    model = Product
+    template_name = 'stock/product_grid.html'
+    context_object_name = 'products'
+    paginate_by = 24
+
+    def get_queryset(self):
+        qs = Product.objects.filter(
+            company=self.request.user.company,
+            is_active=True
+        ).select_related('company').prefetch_related(
+            Prefetch('images', queryset=ProductImage.objects.filter(is_primary=True).order_by('display_order')),
+            'attributes',
+            'inventory_entries__store'
+        )
+
+        # Search query
+        query = self.request.GET.get('q', '').strip()
+        if query:
+            qs = qs.filter(
+                Q(name__icontains=query) |
+                Q(description__icontains=query) |
+                Q(style_code__icontains=query) |
+                Q(sku__icontains=query) |
+                Q(tags__icontains=query)
+            )
+
+        # Faceted filters
+        category = self.request.GET.get('category')
+        if category:
+            qs = qs.filter(category=category)
+
+        metal = self.request.GET.get('metal')
+        if metal:
+            qs = qs.filter(base_metal=metal)
+
+        # Price range filters
+        min_price = self.request.GET.get('price_min')
+        if min_price:
+            try:
+                qs = qs.filter(sale_price__gte=float(min_price))
+            except ValueError:
+                pass
+
+        max_price = self.request.GET.get('price_max')
+        if max_price:
+            try:
+                qs = qs.filter(sale_price__lte=float(max_price))
+            except ValueError:
+                pass
+
+        # Sorting
+        sort = self.request.GET.get('sort', '-trending_score')
+        if sort in ['-trending_score', 'name', '-sale_price', 'sale_price', '-created_at']:
+            qs = qs.order_by(sort)
+
+        return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Facets for filters
+        all_products = Product.objects.filter(
+            company=self.request.user.company,
+            is_active=True
+        )
+
+        context['facets'] = {
+            'categories': all_products.values('category').annotate(count=Count('id')).order_by('category'),
+            'metals': all_products.values('base_metal').annotate(count=Count('id')).order_by('base_metal'),
+            'price_ranges': [
+                {'label': 'Under ₹10k', 'min': 0, 'max': 10000},
+                {'label': '₹10k - ₹50k', 'min': 10000, 'max': 50000},
+                {'label': '₹50k - ₹1L', 'min': 50000, 'max': 100000},
+                {'label': 'Above ₹1L', 'min': 100000, 'max': None},
+            ]
+        }
+
+        context['current_filters'] = {
+            'q': self.request.GET.get('q', ''),
+            'category': self.request.GET.get('category', ''),
+            'metal': self.request.GET.get('metal', ''),
+            'sort': self.request.GET.get('sort', '-trending_score'),
+        }
+
+        return context
+
 
 # --- Transfer Views ---
 

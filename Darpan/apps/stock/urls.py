@@ -11,6 +11,7 @@ urlpatterns = [
     # Products
     path('products/', views.ProductListView.as_view(), name='product_list'),
     path('products/create/', views.ProductCreateView.as_view(), name='product_create'),
+    path('products/search/', views.AdvancedProductSearchView.as_view(), name='product_search'),
     
     # Transfers
     path('', views.TransferListView.as_view(), name='transfer_list'),

@@ -8,7 +8,7 @@ from django.urls import reverse_lazy
 from django.contrib import messages
 from django.shortcuts import redirect
 from django.db import transaction
-from django.db.models import Sum, Max
+from django.db.models import Sum, Max, Count
 
 from .models import SalesRecord, GoldRate, CollectionMaster
 from .forms import SalesRecordForm, CSVImportForm, GoldRateForm
@@ -53,6 +53,62 @@ class AnalyticsDashboardView(LoginRequiredMixin, DashboardAccessMixin, TemplateV
         
         return context
 
+class AdvancedAnalyticsView(LoginRequiredMixin, DashboardAccessMixin, TemplateView):
+    template_name = 'analytics/advanced_dashboard.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        company = self.request.user.company
+        qs = SalesRecord.objects.filter(company=company)
+
+        # KPI Cards
+        kpi_data = qs.aggregate(
+            total_revenue=Sum('revenue'),
+            gross_weight=Sum('gross_weight'),
+            net_weight=Sum('net_weight'),
+            total_transactions=Count('id')
+        )
+        context.update(kpi_data)
+
+        # 1. Sales by Category (Pie Chart)
+        category_data = qs.values('product_category').annotate(
+            total=Sum('revenue')
+        ).order_by('-total')
+        context['category_labels'] = [item['product_category'] for item in category_data]
+        context['category_values'] = [float(item['total']) for item in category_data]
+
+        # 2. Sales by Metal (Doughnut Chart)
+        metal_data = qs.values('base_metal').annotate(
+            total=Sum('revenue')
+        ).order_by('-total')
+        context['metal_labels'] = [item['base_metal'] for item in metal_data]
+        context['metal_values'] = [float(item['total']) for item in metal_data]
+
+        # 3. Top Selling Products (Bar Chart) - Top 10
+        top_products = qs.values('product_name').annotate(
+            total=Sum('revenue')
+        ).order_by('-total')[:10]
+        context['product_labels'] = [item['product_name'] for item in top_products]
+        context['product_values'] = [float(item['total']) for item in top_products]
+
+        # 4. Monthly Trend (Line Chart)
+        # Oracle doesn't support TruncMonth directly in all Django versions seamlessly without some setup,
+        # but we'll try standard Django aggregation first.
+        from django.db.models.functions import TruncMonth
+        monthly_data = qs.annotate(
+            month=TruncMonth('transaction_date')
+        ).values('month').annotate(
+            total=Sum('revenue')
+        ).order_by('month')
+        
+        context['trend_labels'] = [item['month'].strftime('%b %Y') for item in monthly_data if item['month']]
+        context['trend_values'] = [float(item['total']) for item in monthly_data if item['month']]
+
+        # 5. Recent High Value Transactions
+        context['recent_transactions'] = qs.order_by('-revenue')[:10]
+
+        return context
+
 class SalesRecordListView(LoginRequiredMixin, ListView):
     model = SalesRecord
     template_name = 'analytics/list.html'
@@ -72,95 +128,28 @@ class SalesImportView(LoginRequiredMixin, DataAdminRequiredMixin, FormView):
         uploaded_file = form.cleaned_data['data_file']
         
         if file_type == 'sales':
-            return self.process_sales_csv(uploaded_file)
+            return self.process_sales_import(uploaded_file)
         elif file_type == 'collection':
             return self.process_collection_csv(uploaded_file)
-        # Add other handlers later
         
         messages.warning(self.request, "This file type is not yet implemented.")
         return redirect('analytics:import')
 
-    def process_sales_csv(self, csv_file):
-        decoded_file = csv_file.read().decode('utf-8')
-        io_string = io.StringIO(decoded_file)
-        reader = csv.reader(io_string)
+    def process_sales_import(self, uploaded_file):
+        """Use the new SalesImporter for intelligent import"""
+        from .importers import SalesImporter
         
-        # Skip header
-        next(reader, None)
+        importer = SalesImporter(uploaded_file, self.request.user.company, self.request.user)
+        result = importer.process()
         
-        new_rows = 0
-        updated_rows = 0
-        skipped_rows = 0
+        if result['success']:
+            msg = f"Import successful: {result['created']} created, {result['updated']} updated, {result['skipped']} skipped"
+            if result.get('warnings'):
+                msg += f". {len(result['warnings'])} warnings."
+            messages.success(self.request, msg)
+        else:
+            messages.error(self.request, f"Import failed: {', '.join(result['errors'])}")
         
-        try:
-            with transaction.atomic():
-                for row in reader:
-                    if len(row) < 42:
-                        skipped_rows += 1
-                        continue
-                        
-                    # Map CSV columns to Model (0-based index from legacy logic)
-                    # 26: TransactionNo, 27: Date, 36: GrossAmount, 25: Quantity
-                    
-                    trans_no = row[26]
-                    if not trans_no:
-                        skipped_rows += 1
-                        continue
-                        
-                    # Parse Date
-                    try:
-                        trans_date = datetime.strptime(row[27], '%d-%m-%Y').date() if row[27] else None
-                    except ValueError:
-                         # Try fallback format if needed, or skip
-                        trans_date = None
-                        
-                    if not trans_date:
-                        skipped_rows += 1
-                        continue
-
-                    # Calculate Net Sales (Logic from legacy getTransactionCalculations)
-                    entry_type = trans_no.split('/')[0] if '/' in trans_no else ''
-                    gross_amt = float(row[36].replace(',', '')) if row[36] else 0.0
-                    qty = int(row[25]) if row[25] else 0
-                    
-                    net_sales = gross_amt
-                    if entry_type in ['7DE', '7DR', 'LB', 'LE', 'LU']:
-                        net_sales = -gross_amt
-                        
-                    # Update or Create
-                    obj, created = SalesRecord.objects.update_or_create(
-                        company=self.request.user.company,
-                        transaction_no=trans_no,
-                        defaults={
-                            'transaction_date': trans_date,
-                            'client_name': row[1],
-                            'client_mobile': row[2],
-                            'jewel_code': row[3],
-                            'style_code': row[4],
-                            'base_metal': row[5],
-                            'gross_weight': float(row[6]) if row[6] else 0,
-                            'net_weight': float(row[7]) if row[7] else 0,
-                            'product_category': row[21],
-                            'product_subcategory': row[22],
-                            'collection': row[23],
-                            'quantity': qty,
-                            'revenue': net_sales, # Net Sales
-                            'gross_amount': gross_amt,
-                            'region': row[28], # Location
-                            'entry_type': entry_type,
-                            'created_by': self.request.user
-                        }
-                    )
-                    
-                    if created:
-                        new_rows += 1
-                    else:
-                        updated_rows += 1
-                        
-            messages.success(self.request, f"Sales Import: {new_rows} new, {updated_rows} updated, {skipped_rows} skipped.")
-        except Exception as e:
-            messages.error(self.request, f"Error processing CSV: {str(e)}")
-            
         return redirect('analytics:list')
 
     def process_collection_csv(self, csv_file):

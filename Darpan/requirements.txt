@@ -1,8 +1,13 @@
 Django==4.2.7
 mysqlclient==2.2.0
 Pillow==10.1.0
-python-decouple==3.8
+python-decDjango==4.2.7
+mysqlclient==2.2.0
 django-crispy-forms==2.1
-crispy-bootstrap5==2024.2
-python-dateutil==2.8.2
+crispy-bootstrap5==2.0.0
+python-decouple==3.8
+pandas==2.1.3
+openpyxl==3.1.2
+oracledb==1.4.2
+.2
 gunicorn==21.2.0

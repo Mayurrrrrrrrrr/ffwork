@@ -166,10 +166,7 @@ class Migration(migrations.Migration):
             model_name='announcement',
             index=models.Index(fields=['company', 'is_active', '-post_date'], name='announcemen_company_c7120e_idx'),
         ),
-        migrations.AddIndex(
-            model_name='user',
-            index=models.Index(fields=['email'], name='users_email_4b85f2_idx'),
-        ),
+
         migrations.AddIndex(
             model_name='user',
             index=models.Index(fields=['company', 'email'], name='users_company_d08170_idx'),

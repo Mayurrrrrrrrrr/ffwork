@@ -9,6 +9,7 @@ app_name = 'analytics'
 
 urlpatterns = [
     path('', views.AnalyticsDashboardView.as_view(), name='dashboard'),
+    path('advanced/', views.AdvancedAnalyticsView.as_view(), name='advanced_dashboard'),
     path('records/', views.SalesRecordListView.as_view(), name='list'),
     path('import/', views.SalesImportView.as_view(), name='import'),
     path('gold-rate/', views.GoldRateUpdateView.as_view(), name='gold_rate_update'),
