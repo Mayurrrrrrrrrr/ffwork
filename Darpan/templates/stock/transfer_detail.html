@@ -1,0 +1,213 @@
+{% extends "base/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ transfer.iso_number }}{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="mb-1">{{ transfer.iso_number }}</h2>
+            <p class="text-muted mb-0">
+                Requested by <strong>{{ transfer.requested_by.full_name }}</strong> on {{ transfer.request_date|date:"M
+                j, Y" }}
+            </p>
+        </div>
+        <div class="text-end">
+            <span class="badge rounded-pill px-3 py-2 fs-6
+                {% if transfer.status == 'draft' %}bg-secondary
+                {% elif transfer.status == 'requested' %}bg-warning text-dark
+                {% elif transfer.status == 'approved' %}bg-info text-dark
+                {% elif transfer.status == 'shipped' %}bg-primary
+                {% elif transfer.status == 'received' %}bg-success
+                {% elif transfer.status == 'cancelled' %}bg-dark
+                {% endif %}">
+                {{ transfer.get_status_display }}
+            </span>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Route Info -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="text-center">
+                            <h6 class="text-muted text-uppercase small mb-1">Source</h6>
+                            <div class="fw-bold fs-5">{{ transfer.source_store.name }}</div>
+                        </div>
+                        <i data-lucide="arrow-right" class="text-muted" style="width:32px;height:32px;"></i>
+                        <div class="text-center">
+                            <h6 class="text-muted text-uppercase small mb-1">Destination</h6>
+                            <div class="fw-bold fs-5">{{ transfer.destination_store.name }}</div>
+                        </div>
+                    </div>
+                    {% if transfer.notes %}
+                    <div class="mt-3 pt-3 border-top">
+                        <h6 class="text-muted text-uppercase small">Notes</h6>
+                        <p class="mb-0 bg-light p-2 rounded">{{ transfer.notes }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Items List -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Items</h5>
+                </div>
+
+                {% if transfer.status == 'shipped' and receive_formset %}
+                <!-- Receiving Form -->
+                <div class="card-body">
+                    <form method="post" action="{% url 'stock:transfer_action' transfer.pk %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="receive">
+                        {{ receive_formset.management_form }}
+
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th class="text-center">Requested</th>
+                                        <th class="text-center">Shipped</th>
+                                        <th class="text-center" style="width:150px;">Received</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for form in receive_formset %}
+                                    <tr>
+                                        <td>
+                                            {{ form.id }}
+                                            {{ form.instance.product.name }}
+                                            <small class="text-muted d-block">{{ form.instance.product.sku }}</small>
+                                        </td>
+                                        <td class="text-center">{{ form.instance.quantity_requested }}</td>
+                                        <td class="text-center">{{ form.instance.quantity_shipped }}</td>
+                                        <td>{{ form.quantity_received|as_crispy_field }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success">Confirm Receipt</button>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+                <!-- Read-only List -->
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Product</th>
+                                <th class="text-center">Requested</th>
+                                <th class="text-center">Shipped</th>
+                                <th class="text-center pe-4">Received</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in transfer.items.all %}
+                            <tr>
+                                <td class="ps-4">
+                                    {{ item.product.name }}
+                                    <small class="text-muted d-block">{{ item.product.sku }}</small>
+                                </td>
+                                <td class="text-center">{{ item.quantity_requested }}</td>
+                                <td class="text-center">
+                                    {% if transfer.status == 'draft' or transfer.status == 'requested' %}-{% else %}{{
+                                    item.quantity_shipped }}{% endif %}
+                                </td>
+                                <td class="text-center pe-4">
+                                    {% if transfer.status == 'received' %}{{ item.quantity_received }}{% else %}-{%
+                                    endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Actions -->
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Actions</h5>
+                    <div class="d-grid gap-2">
+                        {% if transfer.status == 'draft' %}
+                        <form method="post" action="{% url 'stock:transfer_action' transfer.pk %}" class="d-grid">
+                            {% csrf_token %}
+                            <button type="submit" name="action" value="submit" class="btn btn-success">
+                                Submit Request
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if transfer.status == 'requested' %}
+                        <form method="post" action="{% url 'stock:transfer_action' transfer.pk %}" class="d-grid">
+                            {% csrf_token %}
+                            <button type="submit" name="action" value="approve" class="btn btn-primary">
+                                Approve Request
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if transfer.status == 'approved' %}
+                        <form method="post" action="{% url 'stock:transfer_action' transfer.pk %}" class="d-grid">
+                            {% csrf_token %}
+                            <button type="submit" name="action" value="ship" class="btn btn-primary">
+                                <i data-lucide="truck" class="me-2"></i> Mark as Shipped
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <button class="btn btn-outline-secondary" onclick="window.print()">
+                            <i data-lucide="printer" class="me-2"></i> Print ISO
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <small class="text-muted d-block">Requested</small>
+                            {{ transfer.request_date|date:"M j, Y" }}
+                        </li>
+                        {% if transfer.ship_date %}
+                        <li class="mb-2">
+                            <small class="text-muted d-block">Shipped</small>
+                            {{ transfer.ship_date|date:"M j, Y" }}
+                        </li>
+                        {% endif %}
+                        {% if transfer.receive_date %}
+                        <li class="mb-2">
+                            <small class="text-muted d-block">Received</small>
+                            {{ transfer.receive_date|date:"M j, Y" }}
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

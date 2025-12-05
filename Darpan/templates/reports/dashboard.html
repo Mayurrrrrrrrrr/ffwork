@@ -1,0 +1,190 @@
+{% extends "base/base.html" %}
+
+{% block title %}Reports Dashboard{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Reports & Analytics</h2>
+        <button class="btn btn-outline-secondary" onclick="window.print()">
+            <i data-lucide="printer" class="me-1"></i> Print Report
+        </button>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm border-start border-4 border-primary h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Expenses (30d)</h6>
+                    <h3 class="mb-0">₹{{ expenses_total|floatformat:2 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-start border-4 border-warning h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Pending POs</h6>
+                    <h3 class="mb-0">{{ pending_pos_count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-start border-4 border-success h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Task Completion</h6>
+                    <h3 class="mb-0">{{ task_completion_rate }}%</h3>
+                    <small class="text-muted">{{ completed_tasks }} / {{ total_tasks }} tasks</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card shadow-sm border-start border-4 border-info h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Active Users</h6>
+                    <h3 class="mb-0">{{ request.user.company.users.count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Expense Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Expense Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="expenseChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Recent Purchase Orders</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">PO #</th>
+                                <th>Vendor</th>
+                                <th>Status</th>
+                                <th class="text-end pe-4">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for po in recent_pos %}
+                            <tr>
+                                <td class="ps-4 fw-bold">{{ po.po_number }}</td>
+                                <td>{{ po.vendor.name }}</td>
+                                <td>
+                                    <span class="badge rounded-pill bg-light text-dark border">
+                                        {{ po.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4">₹{{ po.total_amount|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-3 text-muted">No recent POs</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock Transfers -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Recent Stock Transfers</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">ISO #</th>
+                        <th>From</th>
+                        <th>To</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for iso in recent_transfers %}
+                    <tr>
+                        <td class="ps-4 fw-bold">{{ iso.iso_number }}</td>
+                        <td>{{ iso.source_store.name }}</td>
+                        <td>{{ iso.destination_store.name }}</td>
+                        <td>
+                            <span class="badge rounded-pill bg-light text-dark border">
+                                {{ iso.get_status_display }}
+                            </span>
+                        </td>
+                        <td class="text-end pe-4">{{ iso.request_date|date:"M j, Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-3 text-muted">No recent transfers</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{ expense_labels|json_script:"expense-labels-data" }}
+{{ expense_data|json_script:"expense-data-data" }}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ctx = document.getElementById('expenseChart').getContext('2d');
+
+        const labels = JSON.parse(document.getElementById('expense-labels-data').textContent);
+        const data = JSON.parse(document.getElementById('expense-data-data').textContent);
+
+        if (labels.length > 0) {
+
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        } else {
+            ctx.font = "14px Arial";
+            ctx.fillText("No expense data available", 10, 50);
+        }
+    });
+</script>
+{% endblock %}

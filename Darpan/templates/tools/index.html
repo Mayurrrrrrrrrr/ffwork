@@ -1,0 +1,72 @@
+{% extends "base/base.html" %}
+
+{% block title %}Tools & Utilities{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Tools & Utilities</h2>
+    </div>
+
+    <div class="row">
+        <!-- Stock Lookup -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100 hover-card">
+                <div class="card-body text-center py-5">
+                    <div class="mb-3 text-primary">
+                        <i data-lucide="search" style="width: 48px; height: 48px;"></i>
+                    </div>
+                    <h4 class="card-title">Stock Lookup</h4>
+                    <p class="card-text text-muted">Check product availability across all stores instantly.</p>
+                    <a href="{% url 'tools:stock_lookup' %}" class="btn btn-outline-primary stretched-link">Open
+                        Tool</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- EMI Calculator -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100 hover-card">
+                <div class="card-body text-center py-5">
+                    <div class="mb-3 text-success">
+                        <i data-lucide="calculator" style="width: 48px; height: 48px;"></i>
+                    </div>
+                    <h4 class="card-title">EMI Calculator</h4>
+                    <p class="card-text text-muted">Calculate monthly installments for customer financing.</p>
+                    <a href="{% url 'tools:emi_calculator' %}" class="btn btn-outline-success stretched-link">Open
+                        Tool</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scheme Calculator -->
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm h-100 hover-card">
+                <div class="card-body text-center py-5">
+                    <div class="mb-3 text-warning">
+                        <i data-lucide="percent" style="width: 48px; height: 48px;"></i>
+                    </div>
+                    <h4 class="card-title">Scheme Calculator</h4>
+                    <p class="card-text text-muted">Calculate discounts and benefits for active schemes.</p>
+                    <a href="{% url 'tools:scheme_calculator' %}" class="btn btn-outline-warning stretched-link">Open
+                        Tool</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-card {
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .hover-card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+{% endblock %}

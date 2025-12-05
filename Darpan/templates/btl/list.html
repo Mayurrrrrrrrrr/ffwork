@@ -1,0 +1,126 @@
+{% extends "base/base.html" %}
+
+{% block title %}BTL Proposals{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>BTL Proposals</h2>
+        <a href="{% url 'btl:create' %}" class="btn btn-primary">
+            <i data-lucide="plus-circle" class="me-1"></i> New Proposal
+        </a>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if current_view == 'my' %}active{% endif %}" href="?view=my">
+                My Proposals
+                {% if my_pending_count > 0 %}
+                <span class="badge bg-secondary rounded-pill ms-1">{{ my_pending_count }}</span>
+                {% endif %}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if current_view == 'approve' %}active{% endif %}" href="?view=approve">
+                To Approve
+                {% if approval_count > 0 %}
+                <span class="badge bg-danger rounded-pill ms-1">{{ approval_count }}</span>
+                {% endif %}
+            </a>
+        </li>
+        {% if user.roles.exists %}
+        <li class="nav-item">
+            <a class="nav-link {% if current_view == 'team' %}active{% endif %}" href="?view=team">Team Proposals</a>
+        </li>
+        {% endif %}
+    </ul>
+
+    <!-- List -->
+    <div class="card">
+        <div class="card-body p-0">
+            {% if proposals %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Title</th>
+                            <th>Location</th>
+                            <th>Proposed Date</th>
+                            <th>Budget</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for proposal in proposals %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold">{{ proposal.title }}</div>
+                                <div class="small text-muted">{{ proposal.user.full_name }}</div>
+                            </td>
+                            <td>{{ proposal.location }}</td>
+                            <td>{{ proposal.proposed_date|date:"M j, Y" }}</td>
+                            <td class="fw-bold">₹{{ proposal.budget }}</td>
+                            <td>
+                                <span class="badge rounded-pill 
+                                    {% if proposal.status == 'draft' %}bg-secondary
+                                    {% elif proposal.status == 'submitted' %}bg-info text-dark
+                                    {% elif proposal.status == 'approved' %}bg-success
+                                    {% elif proposal.status == 'rejected' %}bg-danger
+                                    {% elif proposal.status == 'completed' %}bg-primary
+                                    {% endif %}">
+                                    {{ proposal.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'btl:detail' proposal.pk %}" class="btn btn-sm btn-outline-primary">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i data-lucide="megaphone" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
+                <p class="text-muted">No BTL proposals found.</p>
+                {% if current_view == 'my' %}
+                <a href="{% url 'btl:create' %}" class="btn btn-outline-primary btn-sm">Create your first proposal</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link"
+                    href="?page={{ page_obj.previous_page_number }}&view={{ current_view }}">Previous</a>
+            </li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&view={{ current_view }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base/base.html" %}
+
+{% block title %}Referrals{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Employee Referrals</h2>
+        <a href="{% url 'referrals:create' %}" class="btn btn-primary">
+            <i data-lucide="user-plus" class="me-1"></i> Refer Candidate
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            {% if referrals %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Candidate Name</th>
+                            <th>Position</th>
+                            <th>Referred By</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            {% if is_hr %}
+                            <th class="text-end pe-4">Actions</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for candidate in referrals %}
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold">{{ candidate.name }}</div>
+                                <small class="text-muted">{{ candidate.email }}</small>
+                            </td>
+                            <td>{{ candidate.position }}</td>
+                            <td>{{ candidate.referred_by.full_name }}</td>
+                            <td>{{ candidate.created_at|date:"M j, Y" }}</td>
+                            <td>
+                                <span class="badge rounded-pill 
+                                    {% if candidate.status == 'submitted' %}bg-secondary
+                                    {% elif candidate.status == 'under_review' %}bg-warning text-dark
+                                    {% elif candidate.status == 'interview' %}bg-info text-dark
+                                    {% elif candidate.status == 'hired' %}bg-success
+                                    {% elif candidate.status == 'rejected' %}bg-danger
+                                    {% endif %}">
+                                    {{ candidate.get_status_display }}
+                                </span>
+                            </td>
+                            {% if is_hr %}
+                            <td class="text-end pe-4">
+                                <a href="{% url 'referrals:update' candidate.pk %}"
+                                    class="btn btn-sm btn-outline-primary">
+                                    Update Status
+                                </a>
+                            </td>
+                            {% endif %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i data-lucide="users" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
+                <p class="text-muted">No referrals found.</p>
+                <a href="{% url 'referrals:create' %}" class="btn btn-outline-primary btn-sm">Refer someone now</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

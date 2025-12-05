@@ -1,0 +1,152 @@
+{% extends "base/base.html" %}
+
+{% block title %}Login - Company Workportal{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .login-container {
+        max-width: 420px;
+        width: 100%;
+        padding: 2.5rem;
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    }
+
+    .login-logo {
+        max-width: 120px;
+        max-height: 40px;
+        margin-bottom: 1rem;
+    }
+
+    .login-container h2 {
+        font-family: 'Playfair Display', serif;
+        color: #212529;
+        margin-bottom: 0.5rem;
+    }
+
+    .login-container p {
+        color: #6c757d;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-label {
+        font-weight: 500;
+        color: #212529;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e9ecef;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.15);
+    }
+
+    .btn-primary {
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        font-weight: 600;
+    }
+
+    .btn-primary:hover {
+        background: linear-gradient(135deg, #5568d3 0%, #6a3f8f 100%);
+    }
+
+    .invalid-feedback {
+        font-size: 0.875rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-wrapper">
+    <div class="login-container text-center">
+        <img src="https://placehold.co/120x40/667eea/FFFFFF?text=Portal" alt="Portal Logo" class="login-logo">
+        <h2 class="mt-3">Company Workportal</h2>
+        <p>Please provide your company code and credentials.</p>
+
+        {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <form method="post" id="login-form">
+            {% csrf_token %}
+
+            <div class="form-group mb-3 text-start" id="company_code_wrapper">
+                <label class="form-label" for="id_company_code">Company Code</label>
+                {{ form.company_code }}
+                {% if form.company_code.errors %}
+                <div class="invalid-feedback d-block">
+                    {{ form.company_code.errors }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group mb-3 text-start">
+                <label class="form-label" for="id_email">Email</label>
+                {{ form.email }}
+                {% if form.email.errors %}
+                <div class="invalid-feedback d-block">
+                    {{ form.email.errors }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group mb-3 text-start">
+                <label class="form-label" for="id_password">Password</label>
+                {{ form.password }}
+                {% if form.password.errors %}
+                <div class="invalid-feedback d-block">
+                    {{ form.password.errors }}
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="form-group mt-4">
+                <button type="submit" class="btn btn-primary w-100">Login</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const platformAdminEmail = 'platform@admin.com';
+    const companyCodeWrapper = document.getElementById('company_code_wrapper');
+    const companyCodeInput = document.getElementById('id_company_code');
+    const emailInput = document.getElementById('id_email');
+
+    function checkPlatformAdmin(emailValue) {
+        if (emailValue.toLowerCase() === platformAdminEmail) {
+            companyCodeWrapper.style.display = 'none';
+            companyCodeInput.required = false;
+        } else {
+            companyCodeWrapper.style.display = 'block';
+            companyCodeInput.required = true;
+        }
+    }
+
+    // Check on page load
+    if (emailInput) {
+        checkPlatformAdmin(emailInput.value);
+    }
+</script>
+{% endblock %}

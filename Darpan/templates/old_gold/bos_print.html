@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill of Supply - {{ transaction.bill_of_supply_no }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 10pt;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 1px solid #ccc;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 16pt;
+            text-transform: uppercase;
+        }
+
+        .company-info {
+            font-size: 9pt;
+            margin-top: 5px;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: auto 1fr auto 1fr;
+            gap: 10px 20px;
+            margin-bottom: 20px;
+            border: 1px solid #000;
+            padding: 10px;
+        }
+
+        .details-grid b {
+            font-weight: bold;
+        }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .items-table th,
+        .items-table td {
+            border: 1px solid #000;
+            padding: 5px;
+            font-size: 9pt;
+        }
+
+        .items-table th {
+            background-color: #f0f0f0;
+            text-align: center;
+        }
+
+        .text-end {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .declaration {
+            font-size: 8pt;
+            text-align: justify;
+            margin-bottom: 40px;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+        }
+
+        .signature-box {
+            text-align: center;
+            width: 200px;
+        }
+
+        .signature-line {
+            border-top: 1px solid #000;
+            margin-top: 40px;
+            padding-top: 5px;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+            }
+
+            .container {
+                border: none;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="no-print" style="text-align: center; margin-bottom: 20px;">
+        <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer;">Print Bill of Supply</button>
+        <button onclick="window.close()" style="padding: 10px 20px; cursor: pointer;">Close</button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>Bill of Supply</h1>
+            <div class="company-info">
+                <strong>{{ transaction.company.name }}</strong><br>
+                {{ transaction.store.address|linebreaksbr }}<br>
+                Phone: {{ transaction.store.phone_number|default:"N/A" }}
+            </div>
+        </div>
+
+        <div class="details-grid">
+            <b>Date:</b> <span>{{ transaction.transaction_date|date:"d-M-Y" }}</span>
+            <b>Bill No:</b> <span>{{ transaction.bill_of_supply_no }}</span>
+
+            <b>Customer:</b> <span>{{ transaction.customer_name }}</span>
+            <b>PAN:</b> <span>{{ transaction.customer_pan }}</span>
+
+            <b>Mobile:</b> <span>{{ transaction.customer_mobile }}</span>
+            <b>Place:</b> <span>{{ transaction.store.gati_location_name }}</span>
+
+            <b>Address:</b> <span style="grid-column: span 3;">{{ transaction.customer_address }}</span>
+        </div>
+
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>S.No</th>
+                    <th>Description</th>
+                    <th>Purity (%)</th>
+                    <th>Gross Wt (g)</th>
+                    <th>Net Wt (g)</th>
+                    <th>Rate (₹/g)</th>
+                    <th>Value (₹)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="text-center">1</td>
+                    <td>{{ transaction.item_description }}</td>
+                    <td class="text-center">{{ transaction.purity_after }}</td>
+                    <td class="text-end">{{ transaction.gross_weight_after }}</td>
+                    <td class="text-end">{{ transaction.net_weight_calculated }}</td>
+                    <td class="text-end">{{ transaction.gold_rate_applied }}</td>
+                    <td class="text-end"><b>{{ transaction.final_value }}</b></td>
+                </tr>
+                <!-- Empty rows for spacing -->
+                <tr>
+                    <td colspan="7" style="height: 50px;"></td>
+                </tr>
+
+                <tr>
+                    <td colspan="6" class="text-end"><b>Total Value:</b></td>
+                    <td class="text-end"><b>{{ transaction.final_value }}</b></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="declaration">
+            <p>I hereby declare that the aforesaid Gold - Jewellery / Coin / Bar, Diamond – Studded Jewellery/ Loose
+                Diamond , Silver -jewellery / Coin / Bar / Others, Platinum jewellery , Setting jewellery is my personal
+                property and not use for any furtherance of business & commerce . I also hereby agree to the above
+                valuation of the Gold - jewellery / Coin / Bar/ Diamond- Studded Jewellery/ Loose Diamond , Silver -
+                jewellery / Coin/ Bar/ Others , Platinum jewellery , Setting jewellery offered to me by {{
+                transaction.company.name }} and I have no objection to the same. I understand and accept that there may
+                be changes of shape and weight while processing the jewellery / Gold brought by me for ascertain the
+                purity. Also I agree that any Stone, precious or semi-precious or artificial can be damaged while
+                unsetting from the jewellery, in the ascertaining the purity and final weight. I understand the company
+                may not accept any lower purity at or below 9 karat (37.5%). I agree that once the jewellery/ Gold is
+                melted for ascertaining purity transaction is completed and the company is not bound to reverse the
+                transaction.</p>
+        </div>
+
+        <div class="footer">
+            <div class="signature-box">
+                <div>Prepared by: {{ transaction.created_by.get_short_name }}</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line">Customer Signature</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line">Authorised Signatory</div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

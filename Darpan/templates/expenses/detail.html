@@ -1,0 +1,162 @@
+{% extends "base/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ report.title }}{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h2 class="mb-1">{{ report.title }}</h2>
+            <p class="text-muted mb-0">
+                Submitted by <strong>{{ report.user.full_name }}</strong> on {{ report.created_at|date:"M j, Y" }}
+            </p>
+        </div>
+        <div class="text-end">
+            <span class="badge rounded-pill px-3 py-2 mb-2 fs-6
+                {% if report.status == 'draft' %}bg-secondary
+                {% elif report.status == 'submitted' %}bg-info text-dark
+                {% elif report.status == 'approved' %}bg-success
+                {% elif report.status == 'rejected' %}bg-danger
+                {% elif report.status == 'paid' %}bg-primary
+                {% endif %}">
+                {{ report.get_status_display }}
+            </span>
+            <div class="fs-4 fw-bold">₹{{ report.total_amount }}</div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-lg-8">
+            <!-- Items List -->
+            <div class="card mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Expense Items</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Date</th>
+                                    <th>Category</th>
+                                    <th>Description</th>
+                                    <th class="text-end pe-4">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td class="ps-4">{{ item.date|date:"M j" }}</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">{{ item.category.name }}</span>
+                                    </td>
+                                    <td>
+                                        {{ item.description }}
+                                        {% if item.receipt %}
+                                        <a href="{{ item.receipt.url }}" target="_blank" class="ms-1 text-primary">
+                                            <i data-lucide="paperclip" style="width:14px;height:14px;"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end pe-4 fw-bold">₹{{ item.amount }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="bg-light">
+                                <tr>
+                                    <td colspan="3" class="text-end fw-bold">Total:</td>
+                                    <td class="text-end pe-4 fw-bold">₹{{ report.total_amount }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Approval Action -->
+            {% if approval_form %}
+            <div class="card border-primary mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Approval Action</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'expenses:action' report.pk %}">
+                        {% csrf_token %}
+                        {{ approval_form|crispy }}
+                        <button type="submit" class="btn btn-primary mt-3">Submit Decision</button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Rejection Reason -->
+            {% if report.status == 'rejected' and report.rejection_reason %}
+            <div class="alert alert-danger">
+                <strong>Rejection Reason:</strong> {{ report.rejection_reason }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Actions -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Actions</h5>
+                    <div class="d-grid gap-2">
+                        {% if report.status == 'draft' and report.user == user %}
+                        <a href="{% url 'expenses:edit' report.pk %}" class="btn btn-outline-primary">
+                            <i data-lucide="edit-2" class="me-2"></i> Edit Report
+                        </a>
+
+                        <form method="post" action="{% url 'expenses:submit' report.pk %}" class="d-grid">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success"
+                                onclick="return confirm('Are you sure you want to submit this report? You cannot edit it afterwards.');">
+                                <i data-lucide="send" class="me-2"></i> Submit for Approval
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <a href="{% url 'expenses:list' %}" class="btn btn-outline-secondary">
+                            <i data-lucide="arrow-left" class="me-2"></i> Back to List
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timeline/Info -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Details</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <small class="text-muted d-block">Report ID</small>
+                            <strong>#{{ report.pk }}</strong>
+                        </li>
+                        <li class="mb-2">
+                            <small class="text-muted d-block">Created</small>
+                            {{ report.created_at|date:"M j, Y H:i" }}
+                        </li>
+                        {% if report.current_approver %}
+                        <li class="mb-2">
+                            <small class="text-muted d-block">Current Approver</small>
+                            <span class="badge bg-warning text-dark">{{ report.current_approver.full_name }}</span>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

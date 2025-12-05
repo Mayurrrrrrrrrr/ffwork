@@ -1,0 +1,94 @@
+{% extends "base/base.html" %}
+
+{% block title %}Admin Portal{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Admin Portal</h2>
+        <div>
+            {% if user.is_superuser %}
+            <a href="{% url 'admin_portal:company_list' %}" class="btn btn-outline-dark me-2">
+                <i data-lucide="building" class="me-1"></i> Manage Companies
+            </a>
+            {% endif %}
+            <a href="{% url 'admin_portal:user_list' %}" class="btn btn-outline-primary me-2">
+                <i data-lucide="users" class="me-1"></i> Manage Users
+            </a>
+            <a href="{% url 'admin_portal:store_list' %}" class="btn btn-outline-primary">
+                <i data-lucide="store" class="me-1"></i> Manage Stores
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow-sm border-start border-4 border-primary h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Total Users</h6>
+                    <h3 class="mb-0">{{ total_users }}</h3>
+                    <small class="text-success">{{ active_users }} Active</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-start border-4 border-info h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">Total Stores</h6>
+                    <h3 class="mb-0">{{ total_stores }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-start border-4 border-secondary h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase small">System Logs</h6>
+                    <h3 class="mb-0">View All</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Audit Logs -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Recent Activity</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Time</th>
+                        <th>User</th>
+                        <th>Action</th>
+                        <th>Details</th>
+                        <th class="text-end pe-4">IP Address</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in recent_logs %}
+                    <tr>
+                        <td class="ps-4 text-muted small">{{ log.timestamp|date:"M j, H:i" }}</td>
+                        <td>{{ log.user.get_short_name }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ log.action }}</span>
+                        </td>
+                        <td>{{ log.details|truncatechars:50 }}</td>
+                        <td class="text-end pe-4 text-muted small">{{ log.ip_address }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-3 text-muted">No recent activity</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

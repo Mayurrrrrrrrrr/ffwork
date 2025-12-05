@@ -1,0 +1,145 @@
+{% extends "base/base.html" %}
+
+{% block title %}Tasks{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Tasks</h2>
+        <a href="{% url 'tasks:create' %}" class="btn btn-primary">
+            <i data-lucide="plus-circle" class="me-1"></i> New Task
+        </a>
+    </div>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link {% if current_view == 'my' %}active{% endif %}" href="?view=my">
+                Assigned to Me
+                {% if my_pending_count > 0 %}
+                <span class="badge bg-danger rounded-pill ms-1">{{ my_pending_count }}</span>
+                {% endif %}
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if current_view == 'assigned' %}active{% endif %}" href="?view=assigned">
+                Assigned by Me
+            </a>
+        </li>
+    </ul>
+
+    <!-- List -->
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            {% if tasks %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Title</th>
+                            <th>Assigned To</th>
+                            <th>Due Date</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th class="text-end pe-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                        <tr>
+                            <td class="ps-4">
+                                <a href="{% url 'tasks:detail' task.pk %}"
+                                    class="text-decoration-none fw-bold text-dark">
+                                    {{ task.title }}
+                                </a>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle bg-secondary text-white small me-2"
+                                        style="width:24px;height:24px;line-height:24px;text-align:center;border-radius:50%;">
+                                        {{ task.assigned_to.get_short_name|slice:":1" }}
+                                    </div>
+                                    {{ task.assigned_to.get_short_name }}
+                                </div>
+                            </td>
+                            <td>
+                                {% if task.due_date %}
+                                <span
+                                    class="{% if task.due_date < today and task.status != 'done' %}text-danger fw-bold{% endif %}">
+                                    {{ task.due_date|date:"M j" }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill 
+                                    {% if task.priority == 'urgent' %}bg-danger
+                                    {% elif task.priority == 'high' %}bg-warning text-dark
+                                    {% elif task.priority == 'medium' %}bg-info text-dark
+                                    {% else %}bg-secondary
+                                    {% endif %}">
+                                    {{ task.get_priority_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill 
+                                    {% if task.status == 'done' %}bg-success
+                                    {% elif task.status == 'in_progress' %}bg-primary
+                                    {% elif task.status == 'review' %}bg-info
+                                    {% else %}bg-secondary
+                                    {% endif %}">
+                                    {{ task.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{% url 'tasks:detail' task.pk %}" class="btn btn-sm btn-outline-secondary">
+                                    <i data-lucide="eye" style="width:14px;height:14px;"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i data-lucide="check-square" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
+                <p class="text-muted">No tasks found.</p>
+                {% if current_view == 'assigned' %}
+                <a href="{% url 'tasks:create' %}" class="btn btn-outline-primary btn-sm">Assign a task</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link"
+                    href="?page={{ page_obj.previous_page_number }}&view={{ current_view }}">Previous</a>
+            </li>
+            {% endif %}
+
+            <li class="page-item disabled">
+                <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&view={{ current_view }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

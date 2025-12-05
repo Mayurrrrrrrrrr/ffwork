@@ -1,0 +1,101 @@
+{% extends "base/base.html" %}
+
+{% block title %}{{ lesson.title }}{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <!-- Content Area -->
+        <div class="col-lg-8">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'learning:catalog' %}">Catalog</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'learning:course_detail' lesson.module.course.pk %}">{{
+                            lesson.module.course.title }}</a></li>
+                    <li class="breadcrumb-item active">{{ lesson.title }}</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body p-4">
+                    <h2 class="mb-4">{{ lesson.title }}</h2>
+
+                    {% if lesson.content_type == 'video' %}
+                    <div class="ratio ratio-16x9 mb-4 bg-dark rounded">
+                        {% if lesson.video_url %}
+                        <iframe src="{{ lesson.video_url }}" title="Video player" allowfullscreen></iframe>
+                        {% else %}
+                        <div class="d-flex align-items-center justify-content-center text-white">
+                            <p>Video URL not configured.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <div class="lesson-content">
+                        {{ lesson.text_content|linebreaks }}
+                    </div>
+
+                    {% if lesson.file_upload %}
+                    <div class="mt-4 p-3 bg-light rounded border d-flex align-items-center">
+                        <i data-lucide="file" class="me-3 text-primary" style="width:32px;height:32px;"></i>
+                        <div>
+                            <h6 class="mb-0">Attached Material</h6>
+                            <a href="{{ lesson.file_upload.url }}" target="_blank" class="text-decoration-none">Download
+                                File</a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-white p-3 d-flex justify-content-between align-items-center">
+                    <a href="{% url 'learning:course_detail' lesson.module.course.pk %}"
+                        class="btn btn-outline-secondary">
+                        <i data-lucide="arrow-left" class="me-1"></i> Back to Course
+                    </a>
+
+                    {% if not is_completed %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-success px-4">
+                            Mark as Complete <i data-lucide="check" class="ms-1"></i>
+                        </button>
+                    </form>
+                    {% else %}
+                    <button class="btn btn-success disabled">
+                        Completed <i data-lucide="check-circle" class="ms-1"></i>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Navigation -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Course Content</h5>
+                </div>
+                <div class="list-group list-group-flush">
+                    {% for mod in lesson.module.course.modules.all %}
+                    <div class="list-group-item bg-light fw-bold">{{ mod.title }}</div>
+                    {% for l in mod.lessons.all %}
+                    <a href="{% url 'learning:lesson' l.pk %}"
+                        class="list-group-item list-group-item-action {% if l == lesson %}active{% endif %}">
+                        <div class="d-flex align-items-center">
+                            <i data-lucide="{% if l.content_type == 'video' %}play-circle{% else %}file-text{% endif %}"
+                                style="width:14px;height:14px;" class="me-2 opacity-75"></i>
+                            <span class="text-truncate">{{ l.title }}</span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

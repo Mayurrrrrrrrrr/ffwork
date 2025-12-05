@@ -1,0 +1,214 @@
+{% extends "base/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Advanced Product Finder{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Sidebar Filters -->
+        <div class="col-md-3 col-lg-2 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i data-lucide="filter" class="me-2" style="width: 18px;"></i> Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" action="{% url 'tools:stock_lookup' %}">
+                        <input type="hidden" name="filter" value="true">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Search</label>
+                            <input type="text" name="q" class="form-control" placeholder="Name, SKU, Store..."
+                                value="{{ current_filters.q }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Category</label>
+                            <select name="category" class="form-select">
+                                <option value="all">All Categories</option>
+                                {% for cat in categories %}
+                                {% if cat %}
+                                <option value="{{ cat }}" {% if current_filters.category==cat %}selected{% endif %}>{{
+                                    cat }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Metal</label>
+                            <select name="metal" class="form-select">
+                                <option value="all">All Metals</option>
+                                {% for metal in metals %}
+                                {% if metal %}
+                                <option value="{{ metal }}" {% if current_filters.metal==metal %}selected{% endif %}>{{
+                                    metal }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Size</label>
+                            <select name="size" class="form-select">
+                                <option value="all">All Sizes</option>
+                                {% for size in sizes %}
+                                {% if size %}
+                                <option value="{{ size }}" {% if current_filters.size==size %}selected{% endif %}>{{
+                                    size }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Location</label>
+                            <select name="location" class="form-select">
+                                <option value="all">All Locations</option>
+                                {% for loc in locations %}
+                                {% if loc %}
+                                <option value="{{ loc }}" {% if current_filters.location==loc %}selected{% endif %}>{{
+                                    loc }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Price Range</label>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text">Min</span>
+                                <input type="number" name="price_min" class="form-control"
+                                    value="{{ current_filters.price_min }}">
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text">Max</span>
+                                <input type="number" name="price_max" class="form-control"
+                                    value="{{ current_filters.price_max }}">
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Apply Filters</button>
+                            <a href="{% url 'tools:stock_lookup' %}" class="btn btn-outline-secondary">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Gallery -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Search Results <span class="text-muted fs-6">({{ page_obj.paginator.count }} items found)</span>
+                </h4>
+            </div>
+
+            {% if inventory_items %}
+            <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+                {% for item in inventory_items %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm product-card">
+                        <!-- Image Placeholder (Replace with actual image logic if available) -->
+                        <div class="bg-light d-flex align-items-center justify-content-center"
+                            style="height: 200px; overflow: hidden;">
+                            {% if item.product.style_code %}
+                            <!-- Construct Image URL based on Style Code (Legacy Logic) -->
+                            <!-- Assuming a helper or just direct construction for now -->
+                            <img src="https://fireflylgd-assets.s3.eu-north-1.amazonaws.com/public/shopify/compressed-images/{{ item.product.style_code|slice:"
+                                :3" }}/{{ item.product.style_code }}.jpg" class="card-img-top"
+                                alt="{{ item.product.name }}"
+                                onerror="this.onerror=null; this.src='https://via.placeholder.com/300x300?text=No+Image';">
+                            {% else %}
+                            <span class="text-muted"><i data-lucide="image"
+                                    style="width: 48px; height: 48px;"></i></span>
+                            {% endif %}
+                        </div>
+
+                        <div class="card-body">
+                            <h6 class="card-title text-truncate" title="{{ item.product.name }}">{{ item.product.name }}
+                            </h6>
+                            <p class="card-text small mb-1">
+                                <span class="badge bg-secondary">{{ item.product.sku }}</span>
+                                {% if item.product.style_code %}
+                                <span class="badge bg-info text-dark">{{ item.product.style_code }}</span>
+                                {% endif %}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <span class="fw-bold text-success">₹{{ item.product.sale_price|floatformat:0 }}</span>
+                                <span class="badge {% if item.quantity > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                    Qty: {{ item.quantity }}
+                                </span>
+                            </div>
+                            <div class="mt-2 small text-muted">
+                                <i data-lucide="map-pin" style="width: 14px;"></i> {{ item.store.name }}
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white border-top-0">
+                            {% if item.quantity > 0 and item.store != user.store %}
+                            <form method="post" action="{% url 'stock:quick_request' %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="inventory_id" value="{{ item.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-primary w-100">
+                                    Request Transfer
+                                </button>
+                            </form>
+                            {% else %}
+                            <button class="btn btn-sm btn-secondary w-100" disabled>
+                                {% if item.store == user.store %}In Your Store{% else %}Out of Stock{% endif %}
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="alert alert-warning text-center py-5">
+                <i data-lucide="search-x" class="mb-3" style="width: 48px; height: 48px;"></i>
+                <h5>No products found</h5>
+                <p class="text-muted">Try adjusting your filters or search query.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .product-card {
+        transition: transform 0.2s;
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+{% endblock %}

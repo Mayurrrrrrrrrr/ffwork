@@ -1,0 +1,278 @@
+{% extends "base/base.html" %}
+
+{% block title %}Certificate Generator{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4 no-print">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Certificate Generator</h2>
+        <button onclick="window.print()" class="btn btn-primary">
+            <i data-lucide="printer" class="me-2"></i> Print Certificate
+        </button>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">Certificate Details</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Customer Name</label>
+                    <input type="text" id="inputName" class="form-control" placeholder="Enter customer name">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Jewel Code / SKU</label>
+                    <input type="text" id="inputSku" class="form-control" placeholder="Enter SKU">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Certificate No.</label>
+                    <input type="text" id="inputCertNo" class="form-control" value="CERT-{{ now|date:'Ymd' }}-001">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Issue Date</label>
+                    <input type="date" id="inputDate" class="form-control" value="{% now 'Y-m-d' %}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Purity</label>
+                    <select id="inputPurity" class="form-select">
+                        <option value="22K">22K (916)</option>
+                        <option value="18K">18K (750)</option>
+                        <option value="14K">14K (585)</option>
+                        <option value="24K">24K (999)</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Item Description</label>
+                    <textarea id="inputDesc" class="form-control" rows="2"
+                        placeholder="e.g. Gold Necklace with Ruby"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Certificate Preview / Print Layout -->
+<div class="certificate-container">
+    <div class="certificate-border">
+        <div class="certificate-header">
+            <h1>Certificate of Authenticity</h1>
+            <p class="company-name">{{ request.user.company.name }}</p>
+            <p class="company-address">{{ request.user.store.address|default:"Authorized Jeweller" }}</p>
+        </div>
+
+        <div class="certificate-body">
+            <p class="cert-text">This is to certify that the jewellery item described below is guaranteed to be
+                authentic and of the stated purity.</p>
+
+            <div class="cert-details">
+                <div class="detail-row">
+                    <span class="label">Certificate No:</span>
+                    <span class="value" id="dispCertNo">CERT-{{ now|date:'Ymd' }}-001</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Date of Issue:</span>
+                    <span class="value" id="dispDate">{% now 'd-M-Y' %}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Customer Name:</span>
+                    <span class="value" id="dispName">____________________</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Jewel Code:</span>
+                    <span class="value" id="dispSku">____________________</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Description:</span>
+                    <span class="value" id="dispDesc">____________________</span>
+                </div>
+                <div class="detail-row">
+                    <span class="label">Gold Purity:</span>
+                    <span class="value" id="dispPurity">22K (916)</span>
+                </div>
+            </div>
+
+            <div class="cert-footer">
+                <div class="signature">
+                    <div class="line"></div>
+                    <div class="text">Authorized Signatory</div>
+                </div>
+                <div class="seal">
+                    <div class="seal-circle">
+                        OFFICIAL<br>SEAL
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Screen Styles */
+    .certificate-container {
+        max-width: 800px;
+        margin: 0 auto 50px auto;
+        background: #fff;
+        padding: 20px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Print Styles */
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+
+        body {
+            background: #fff;
+            padding: 0;
+            margin: 0;
+        }
+
+        .certificate-container {
+            box-shadow: none;
+            margin: 0;
+            width: 100%;
+            max-width: 100%;
+        }
+
+        /* Hide navbar and footer if they exist */
+        nav,
+        footer,
+        .navbar {
+            display: none !important;
+        }
+    }
+
+    /* Certificate Design */
+    .certificate-border {
+        border: 10px double #daa520;
+        /* Goldenrod */
+        padding: 40px;
+        position: relative;
+        min-height: 600px;
+    }
+
+    .certificate-header {
+        text-align: center;
+        margin-bottom: 40px;
+        border-bottom: 2px solid #daa520;
+        padding-bottom: 20px;
+    }
+
+    .certificate-header h1 {
+        font-family: 'Times New Roman', serif;
+        color: #333;
+        font-size: 32pt;
+        margin: 0;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    .company-name {
+        font-size: 18pt;
+        font-weight: bold;
+        color: #555;
+        margin: 10px 0 5px 0;
+    }
+
+    .cert-text {
+        text-align: center;
+        font-style: italic;
+        margin-bottom: 30px;
+        font-size: 12pt;
+    }
+
+    .cert-details {
+        margin: 0 auto;
+        width: 80%;
+    }
+
+    .detail-row {
+        display: flex;
+        margin-bottom: 15px;
+        border-bottom: 1px dotted #ccc;
+        padding-bottom: 5px;
+    }
+
+    .detail-row .label {
+        font-weight: bold;
+        width: 150px;
+        color: #333;
+    }
+
+    .detail-row .value {
+        flex: 1;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        color: #000;
+    }
+
+    .cert-footer {
+        margin-top: 60px;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        padding: 0 50px;
+    }
+
+    .signature .line {
+        width: 200px;
+        border-top: 1px solid #000;
+        margin-bottom: 5px;
+    }
+
+    .seal-circle {
+        width: 100px;
+        height: 100px;
+        border: 3px solid #daa520;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-weight: bold;
+        color: #daa520;
+        transform: rotate(-15deg);
+    }
+</style>
+
+<script>
+    // Live Update Logic
+    const inputs = {
+        'inputName': 'dispName',
+        'inputSku': 'dispSku',
+        'inputCertNo': 'dispCertNo',
+        'inputDesc': 'dispDesc',
+        'inputPurity': 'dispPurity'
+    };
+
+    Object.keys(inputs).forEach(inputId => {
+        const input = document.getElementById(inputId);
+        const display = document.getElementById(inputs[inputId]);
+
+        if (input && display) {
+            input.addEventListener('input', () => {
+                display.textContent = input.value || '____________________';
+            });
+        }
+    });
+
+    // Date special handling
+    const dateInput = document.getElementById('inputDate');
+    const dateDisp = document.getElementById('dispDate');
+    if (dateInput && dateDisp) {
+        dateInput.addEventListener('change', () => {
+            const d = new Date(dateInput.value);
+            if (!isNaN(d.getTime())) {
+                const options = { day: 'numeric', month: 'short', year: 'numeric' };
+                dateDisp.textContent = d.toLocaleDateString('en-GB', options).replace(/ /g, '-');
+            }
+        });
+    }
+</script>
+{% endblock %}

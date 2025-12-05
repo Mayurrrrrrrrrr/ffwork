@@ -1,0 +1,87 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'dashboard:home' %}">
+            <strong>Darpan</strong> Portal
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                {% if user.is_authenticated %}
+                <li class="nav-item dropdown me-3">
+                    <a class="nav-link dropdown-toggle" href="#" id="modulesDropdown" role="button"
+                        data-bs-toggle="dropdown">
+                        <i data-lucide="grid" style="width:16px;height:16px;" class="me-1"></i> Modules
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'expenses:list' %}">
+                                <i data-lucide="receipt" style="width:14px;height:14px;" class="me-2"></i> Expenses
+                            </a></li>
+                        <li><a class="dropdown-item" href="{% url 'btl:list' %}">
+                                <i data-lucide="megaphone" style="width:14px;height:14px;" class="me-2"></i> BTL
+                                Marketing
+                            </a></li>
+                        <li><a class="dropdown-item" href="{% url 'learning:catalog' %}">
+                                <i data-lucide="book-open" style="width:14px;height:14px;" class="me-2"></i> Learning
+                                (LMS)
+                            </a></li>
+                        <li><a class="dropdown-item" href="{% url 'purchasing:po_list' %}">
+                                <i data-lucide="shopping-cart" style="width:14px;height:14px;" class="me-2"></i>
+                                Purchase Orders
+                            </a></li>
+                        <li><a class="dropdown-item" href="{% url 'tasks:list' %}">
+                                <i data-lucide="check-square" style="width:14px;height:14px;" class="me-2"></i> Tasks
+                            </a></li>
+                        <li><a class="dropdown-item" href="{% url 'stock:transfer_list' %}">
+                                <i data-lucide="truck" style="width:14px;height:14px;" class="me-2"></i> Stock Transfers
+                            </a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="{% url 'reports:dashboard' %}">
+                                <i data-lucide="bar-chart-2" style="width:14px;height:14px;" class="me-2"></i> Reports
+                            </a></li>
+                        <li><a class="dropdown-item" href="{% url 'tools:index' %}">
+                                <i data-lucide="tool" style="width:14px;height:14px;" class="me-2"></i> Tools
+                            </a></li>
+                        <li><a class="dropdown-item" href="{% url 'referrals:list' %}">
+                                <i data-lucide="users" style="width:14px;height:14px;" class="me-2"></i> Referrals
+                            </a></li>
+                        <li><a class="dropdown-item" href="{% url 'analytics:dashboard' %}">
+                                <i data-lucide="bar-chart-2" style="width:14px;height:14px;" class="me-2"></i> Sales
+                                Analytics
+                            </a></li>
+                        {% if request.user.is_superuser or 'admin' in request.user.get_role_names %}
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="{% url 'admin_portal:dashboard' %}">
+                                <i data-lucide="shield" style="width:14px;height:14px;" class="me-2"></i> Admin Portal
+                            </a></li>
+                        {% endif %}
+                    </ul>
+                </li>
+
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                        data-bs-toggle="dropdown">
+                        <i data-lucide="user" style="width:16px;height:16px;"></i>
+                        {{ user.get_short_name }}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'authentication:change_password' %}">Change
+                                Password</a></li>
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+                        <li><a class="dropdown-item" href="{% url 'authentication:logout' %}">Logout</a></li>
+                    </ul>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>

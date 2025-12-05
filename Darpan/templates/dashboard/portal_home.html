@@ -1,0 +1,269 @@
+{% extends "base/base.html" %}
+
+{% block title %}Portal Home{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --accent-primary: #0d6efd;
+        --accent-success: #198754;
+        --accent-info: #0dcaf0;
+        --accent-warning: #ffc107;
+        --accent-danger: #dc3545;
+        --accent-secondary: #6c757d;
+
+        --accent-primary-light: rgba(13, 110, 253, 0.1);
+        --accent-success-light: rgba(25, 135, 84, 0.1);
+        --accent-info-light: rgba(13, 202, 240, 0.1);
+        --accent-warning-light: rgba(255, 193, 7, 0.1);
+        --accent-danger-light: rgba(220, 53, 69, 0.1);
+    }
+
+    .portal-icon-grid .portal-card-small {
+        text-align: center;
+        padding: 1.5rem 1rem;
+        transition: all 0.2s;
+        cursor: pointer;
+        text-decoration: none;
+        display: block;
+    }
+
+    .portal-icon-grid .portal-card-small:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .portal-icon {
+        width: 48px;
+        height: 48px;
+        padding: 10px;
+        border-radius: 0.75rem;
+        margin: 0 auto 0.75rem;
+        display: block;
+    }
+
+    .bg-primary-light {
+        background-color: var(--accent-primary-light);
+    }
+
+    .bg-success-light {
+        background-color: var(--accent-success-light);
+    }
+
+    .bg-info-light {
+        background-color: var(--accent-info-light);
+    }
+
+    .bg-warning-light {
+        background-color: var(--accent-warning-light);
+    }
+
+    .bg-danger-light {
+        background-color: var(--accent-danger-light);
+    }
+
+    .celebration-card-body {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+    .list-group-item-action:hover {
+        transform: translateX(4px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Welcome Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2">Welcome, {{ user.get_short_name }}!</h1>
+        {% if total_pending_actions > 0 %}
+        <span class="badge bg-danger p-2 rounded-pill">
+            <i data-lucide="bell" style="width:16px; height:16px;"></i>
+            {{ total_pending_actions }} Pending Action{{ total_pending_actions|pluralize }}
+        </span>
+        {% endif %}
+    </div>
+
+    <div class="row g-4">
+        <!-- Main Column -->
+        <div class="col-lg-8">
+            <!-- Pending Actions -->
+            <h4 class="mb-3">Pending Actions</h4>
+            <div class="card mb-4">
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        {% if total_pending_actions == 0 %}
+                        <div class="list-group-item">
+                            <div class="d-flex align-items-center text-muted">
+                                <i data-lucide="check-circle" class="me-2 text-success"></i>
+                                <span>No pending actions. You're all caught up!</span>
+                            </div>
+                        </div>
+                        {% else %}
+                        <!-- Pending actions will be populated when modules are created -->
+                        <div class="list-group-item">
+                            <div class="text-muted">Pending actions will appear here when modules are created.</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Portals -->
+            <h4 class="mb-3 mt-4">Main Portals</h4>
+            <div class="row g-3 portal-icon-grid">
+                <div class="col-md-4 col-6">
+                    <a href="{% url 'expenses:list' %}" class="card portal-card-small">
+                        <i data-lucide="credit-card" class="portal-icon text-primary bg-primary-light"></i>
+                        <div class="fw-bold text-dark">Expenses</div>
+                    </a>
+                </div>
+
+                <div class="col-md-4 col-6">
+                    <a href="{% url 'btl:list' %}" class="card portal-card-small">
+                        <i data-lucide="megaphone" class="portal-icon text-success bg-success-light"></i>
+                        <div class="fw-bold text-dark">BTL Marketing</div>
+                    </a>
+                </div>
+
+                <div class="col-md-4 col-6">
+                    <a href="{% url 'learning:catalog' %}" class="card portal-card-small">
+                        <i data-lucide="graduation-cap" class="portal-icon text-info bg-info-light"></i>
+                        <div class="fw-bold text-dark">Learning</div>
+                    </a>
+                </div>
+
+                <div class="col-md-4 col-6">
+                    <a href="{% url 'purchasing:po_list' %}" class="card portal-card-small">
+                        <i data-lucide="shopping-cart" class="portal-icon text-warning bg-warning-light"></i>
+                        <div class="fw-bold text-dark">Purchasing</div>
+                    </a>
+                </div>
+
+                <div class="col-md-4 col-6">
+                    <a href="{% url 'tasks:list' %}" class="card portal-card-small">
+                        <i data-lucide="list-checks" class="portal-icon text-secondary bg-secondary-light"></i>
+                        <div class="fw-bold text-dark">Tasks</div>
+                    </a>
+                </div>
+
+                <div class="col-md-4 col-6">
+                    <a href="{% url 'reports:dashboard' %}" class="card portal-card-small">
+                        <i data-lucide="bar-chart-2" class="portal-icon text-danger bg-danger-light"></i>
+                        <div class="fw-bold text-dark">Reports</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Column -->
+        <div class="col-lg-4">
+            <!-- Birthdays -->
+            <div class="card mb-4">
+                <div class="card-header bg-white d-flex align-items-center">
+                    <i data-lucide="cake" class="me-2 text-primary"></i>
+                    <h5 class="mb-0">Birthdays ({{ birthdays_today|length|add:birthdays_this_month|length }})</h5>
+                </div>
+                <div class="card-body celebration-card-body">
+                    {% if not birthdays_today and not birthdays_this_month %}
+                    <p class="text-muted text-center pt-3">No birthdays this month.</p>
+                    {% else %}
+                    {% if birthdays_today %}
+                    <h6 class="text-primary fw-bold">Today's Birthdays!</h6>
+                    <ul class="list-unstyled mb-3">
+                        {% for person in birthdays_today %}
+                        <li class="mb-1 d-flex align-items-center">
+                            <i data-lucide="party-popper" class="me-2 text-warning flex-shrink-0"
+                                style="width:16px;"></i>
+                            <strong>{{ person.full_name }}</strong>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+
+                    {% if birthdays_this_month %}
+                    <h6 class="text-muted {% if birthdays_today %}border-top pt-3{% endif %}">Upcoming Birthdays</h6>
+                    <ul class="list-unstyled mb-0">
+                        {% for person in birthdays_this_month %}
+                        <li class="mb-1 d-flex justify-content-between">
+                            <span>{{ person.full_name }}</span>
+                            <span class="text-muted small">{{ person.dob|date:"M j" }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Anniversaries -->
+            <div class="card mb-4">
+                <div class="card-header bg-white d-flex align-items-center">
+                    <i data-lucide="award" class="me-2 text-success"></i>
+                    <h5 class="mb-0">Work Anniversaries ({{
+                        anniversaries_today|length|add:anniversaries_this_month|length }})</h5>
+                </div>
+                <div class="card-body celebration-card-body">
+                    {% if not anniversaries_today and not anniversaries_this_month %}
+                    <p class="text-muted text-center pt-3">No anniversaries this month.</p>
+                    {% else %}
+                    {% if anniversaries_today %}
+                    <h6 class="text-success fw-bold">Today's Anniversaries!</h6>
+                    <ul class="list-unstyled mb-3">
+                        {% for person in anniversaries_today %}
+                        <li class="mb-1 d-flex align-items-center">
+                            <i data-lucide="sparkles" class="me-2 text-warning flex-shrink-0" style="width:16px;"></i>
+                            <strong>{{ person.full_name }}</strong>
+                            <span class="badge bg-success-light rounded-pill ms-auto">{{ person.years_of_service }}
+                                Year{{ person.years_of_service|pluralize }}!</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+
+                    {% if anniversaries_this_month %}
+                    <h6 class="text-muted {% if anniversaries_today %}border-top pt-3{% endif %}">Upcoming Anniversaries
+                    </h6>
+                    <ul class="list-unstyled mb-0">
+                        {% for person in anniversaries_this_month %}
+                        <li class="mb-1 d-flex justify-content-between">
+                            <span>{{ person.full_name }}</span>
+                            <span class="text-muted small">{{ person.doj|date:"M j" }} ({{ person.years_of_service }}
+                                Year{{ person.years_of_service|pluralize }})</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Announcements -->
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Announcements</h5>
+                </div>
+                <div class="card-body">
+                    {% if not announcements %}
+                    <p class="text-muted">No recent announcements.</p>
+                    {% else %}
+                    {% for announcement in announcements %}
+                    <div {% if not forloop.last %}class="mb-3 pb-3 border-bottom" {% endif %}>
+                        <h6 class="fw-bold">{{ announcement.title }}</h6>
+                        <p class="small text-muted mb-1">Posted on {{ announcement.post_date|date:"F j, Y" }}</p>
+                        <p class="card-text small">{{ announcement.content|linebreaks }}</p>
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

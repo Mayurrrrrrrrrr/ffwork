@@ -1,0 +1,126 @@
+{% extends "base/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Old Gold Entry{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Old Gold Purchase Entry</h2>
+        <a href="{% url 'old_gold:list' %}" class="btn btn-outline-secondary">
+            <i data-lucide="arrow-left" class="me-1"></i> Back to List
+        </a>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Enter Transaction Details</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="oldGoldForm">
+                        {% csrf_token %}
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                {{ form.transaction_date|as_crispy_field }}
+                            </div>
+                            <div class="col-md-8">
+                                <div class="alert alert-info py-2 mb-0">
+                                    <i data-lucide="info" class="me-2" style="width: 16px;"></i>
+                                    Store will be automatically assigned based on your login.
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <hr>
+                                <h5 class="text-muted">Customer Details</h5>
+                            </div>
+                            <div class="col-md-4">{{ form.customer_name|as_crispy_field }}</div>
+                            <div class="col-md-4">{{ form.customer_mobile|as_crispy_field }}</div>
+                            <div class="col-md-4">{{ form.customer_pan|as_crispy_field }}</div>
+                            <div class="col-12">{{ form.customer_address|as_crispy_field }}</div>
+
+                            <div class="col-12">
+                                <hr>
+                                <h5 class="text-muted">Gold Details</h5>
+                            </div>
+                            <div class="col-12">{{ form.item_description|as_crispy_field }}</div>
+
+                            <div class="col-md-6">{{ form.gross_weight_before|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.purity_before|as_crispy_field }}</div>
+
+                            <div class="col-md-4">{{ form.gross_weight_after|as_crispy_field }}</div>
+                            <div class="col-md-4">{{ form.purity_after|as_crispy_field }}</div>
+                            <div class="col-md-4">{{ form.deduction_addition|as_crispy_field }}</div>
+
+                            <div class="col-12">
+                                <hr>
+                                <h5 class="text-muted">Valuation</h5>
+                            </div>
+                            <div class="col-md-6">{{ form.gold_rate_applied|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.final_value|as_crispy_field }}</div>
+
+                            <div class="col-12">
+                                <div class="p-3 bg-light rounded border">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Calculated Net Weight:</span>
+                                        <span class="fw-bold" id="calc_net_weight">0.000 g</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Calculated Final Value:</span>
+                                        <span class="fw-bold text-success fs-5" id="calc_final_value">₹ 0.00</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">{{ form.remarks|as_crispy_field }}</div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i data-lucide="save" class="me-2"></i> Save Transaction
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const gwAfterInput = document.getElementById('id_gross_weight_after');
+        const purityAfterInput = document.getElementById('id_purity_after');
+        const rateInput = document.getElementById('id_gold_rate_applied');
+        const finalValueInput = document.getElementById('id_final_value');
+
+        const netWeightDisplay = document.getElementById('calc_net_weight');
+        const finalValueDisplay = document.getElementById('calc_final_value');
+
+        function calculate() {
+            const gw = parseFloat(gwAfterInput.value) || 0;
+            const purity = parseFloat(purityAfterInput.value) || 0;
+            const rate = parseFloat(rateInput.value) || 0;
+
+            const netWeight = (gw * purity) / 100;
+            const value = netWeight * rate;
+
+            netWeightDisplay.textContent = netWeight.toFixed(3) + ' g';
+            finalValueDisplay.textContent = '₹ ' + value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            finalValueInput.value = value.toFixed(2);
+        }
+
+        [gwAfterInput, purityAfterInput, rateInput].forEach(input => {
+            if (input) input.addEventListener('input', calculate);
+        });
+    });
+</script>
+{% endblock %}

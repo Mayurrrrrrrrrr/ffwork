@@ -1,0 +1,145 @@
+{% extends "base/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Create Purchase Order{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h4 class="mb-0">New Purchase Order</h4>
+                    <a href="{% url 'purchasing:po_list' %}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="po-form">
+                        {% csrf_token %}
+
+                        <!-- Header Fields -->
+                        <div class="row mb-4">
+                            <div class="col-md-6 mb-3">
+                                {{ form.vendor|as_crispy_field }}
+                                <small class="form-text text-muted">
+                                    <a href="{% url 'purchasing:vendor_create' %}" target="_blank">+ Add New Vendor</a>
+                                </small>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                {{ form.order_date|as_crispy_field }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                {{ form.expected_date|as_crispy_field }}
+                            </div>
+                            <div class="col-md-12">
+                                {{ form.notes|as_crispy_field }}
+                            </div>
+                        </div>
+
+                        <hr>
+
+                        <!-- Line Items -->
+                        <h5 class="mb-3">Order Items</h5>
+
+                        {{ items.management_form }}
+
+                        <div id="items-container">
+                            {% for form in items %}
+                            <div class="po-item card mb-3 bg-light border-0">
+                                <div class="card-body">
+                                    {{ form.id }}
+                                    <div class="row">
+                                        <div class="col-md-5 mb-2">
+                                            {{ form.description|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            {{ form.quantity|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            {{ form.unit_price|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-2 text-end d-flex align-items-center justify-content-end">
+                                            {% if items.can_delete %}
+                                            <div class="form-check form-switch">
+                                                {{ form.DELETE }}
+                                                <label class="form-check-label text-danger"
+                                                    for="{{ form.DELETE.id_for_label }}">Delete</label>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Empty form template for JS -->
+                        <div id="empty-form" style="display:none;">
+                            <div class="po-item card mb-3 bg-light border-0">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-5 mb-2">
+                                            {{ items.empty_form.description|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-2 mb-2">
+                                            {{ items.empty_form.quantity|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            {{ items.empty_form.unit_price|as_crispy_field }}
+                                        </div>
+                                        <div class="col-md-2 text-end d-flex align-items-center justify-content-end">
+                                            <button type="button"
+                                                class="btn btn-sm btn-outline-danger remove-item-btn">Remove</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <button type="button" id="add-item-btn" class="btn btn-outline-primary">
+                                <i data-lucide="plus" style="width:16px;height:16px;"></i> Add Item
+                            </button>
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary px-4">Create Purchase Order</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const container = document.getElementById('items-container');
+        const addButton = document.getElementById('add-item-btn');
+        const totalForms = document.getElementById('id_items-TOTAL_FORMS');
+        const emptyFormTemplate = document.getElementById('empty-form').innerHTML;
+
+        addButton.addEventListener('click', function () {
+            const formIdx = totalForms.value;
+            const newFormHtml = emptyFormTemplate.replace(/__prefix__/g, formIdx);
+
+            const newDiv = document.createElement('div');
+            newDiv.innerHTML = newFormHtml;
+            container.appendChild(newDiv.firstElementChild);
+
+            totalForms.value = parseInt(formIdx) + 1;
+        });
+
+        container.addEventListener('click', function (e) {
+            if (e.target.classList.contains('remove-item-btn')) {
+                e.target.closest('.po-item').remove();
+            }
+        });
+    });
+</script>
+{% endblock %}
