@@ -11,17 +11,25 @@ class SalesRecordForm(forms.ModelForm):
         }
 
 class CSVImportForm(forms.Form):
-    file_type = forms.ChoiceField(choices=[
-        ('sales', 'Sales Data (CSV)'),
-        ('stock', 'Stock Data (JSON)'),
-        ('opening_stock', 'Opening Stock (JSON)'),
-        ('cost', 'Cost Data (JSON)'),
-        ('collection', 'Collection Master (CSV)'),
-    ], widget=forms.Select(attrs={'class': 'form-select'}))
+    FILE_TYPES = [
+        ('sales', 'Sales Data (sales.csv)'),
+        ('stock', 'Stock/Inventory Data (stock.csv)'),
+        ('crm', 'CRM Report (crmreport.csv)'),
+        ('collection', 'Collection Master'),
+    ]
     
-    data_file = forms.FileField(widget=forms.FileInput(attrs={'class': 'form-control', 'accept': '.csv,.json'}))
+    file_type = forms.ChoiceField(
+        choices=FILE_TYPES,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
     
-    snapshot_month = forms.DateField(required=False, widget=forms.DateInput(attrs={'type': 'month', 'class': 'form-control'}))
+    data_file = forms.FileField(
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '.csv,.xlsx,.xls'
+        }),
+        help_text='Upload CSV or Excel file'
+    )
 
 class GoldRateForm(forms.ModelForm):
     class Meta:

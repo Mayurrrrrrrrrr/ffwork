@@ -1,0 +1,114 @@
+{% extends "base/base.html" %}
+
+{% block title %}Import History{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i data-lucide="history" class="me-2" style="width:28px;"></i>Import History</h2>
+        <a href="{% url 'analytics:import' %}" class="btn btn-primary">
+            <i data-lucide="upload" style="width:16px;"></i> New Import
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Type</th>
+                        <th>File</th>
+                        <th>Imported By</th>
+                        <th>Date</th>
+                        <th class="text-center">Rows</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in imports %}
+                    <tr>
+                        <td>
+                            <span
+                                class="badge bg-{% if log.file_type == 'sales' %}primary{% elif log.file_type == 'stock' %}success{% else %}secondary{% endif %}">
+                                {{ log.get_file_type_display }}
+                            </span>
+                        </td>
+                        <td>{{ log.file_name|truncatechars:30 }}</td>
+                        <td>{{ log.imported_by.get_full_name|default:log.imported_by.email }}</td>
+                        <td>{{ log.imported_at|date:"d M Y H:i" }}</td>
+                        <td class="text-center">
+                            <span class="text-success">{{ log.rows_imported }}</span>
+                            {% if log.rows_skipped %}<span class="text-warning ms-1">/ {{ log.rows_skipped }}
+                                skip</span>{% endif %}
+                            {% if log.rows_ignored %}<span class="text-secondary ms-1">/ {{ log.rows_ignored }}
+                                ign</span>{% endif %}
+                        </td>
+                        <td>
+                            {% if log.columns_unmapped %}
+                            <button class="btn btn-sm btn-outline-warning" data-bs-toggle="collapse"
+                                data-bs-target="#unmapped-{{ log.id }}">
+                                {{ log.columns_unmapped|length }} unmapped
+                            </button>
+                            {% else %}
+                            <span class="badge bg-success">Complete</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% if log.columns_unmapped %}
+                    <tr class="collapse" id="unmapped-{{ log.id }}">
+                        <td colspan="6" class="bg-light">
+                            <div class="p-2">
+                                <strong>Unmapped Columns:</strong>
+                                <div class="d-flex flex-wrap gap-1 mt-2">
+                                    {% for col in log.columns_unmapped %}
+                                    <span class="badge bg-secondary">{{ col }}</span>
+                                    {% endfor %}
+                                </div>
+                                {% if log.columns_mapped %}
+                                <div class="mt-2">
+                                    <strong>Mapped Columns:</strong>
+                                    <div class="d-flex flex-wrap gap-1 mt-1">
+                                        {% for col in log.columns_mapped %}
+                                        <span class="badge bg-success">{{ col }}</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i data-lucide="inbox" style="width:48px; height:48px;"></i>
+                            <p class="mt-2">No imports yet. <a href="{% url 'analytics:import' %}">Import data</a></p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <nav class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+            {% endif %}
+            <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} of {{
+                    page_obj.paginator.num_pages }}</span></li>
+            {% if page_obj.has_next %}
+            <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

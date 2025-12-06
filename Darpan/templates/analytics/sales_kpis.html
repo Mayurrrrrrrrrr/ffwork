@@ -1,0 +1,227 @@
+{% extends "base/base.html" %}
+
+{% block title %}Sales KPIs{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i data-lucide="trending-up" class="me-2" style="width:28px;"></i>Sales KPIs</h2>
+        <div>
+            <a href="{% url 'analytics:import' %}" class="btn btn-outline-primary btn-sm me-2">
+                <i data-lucide="upload" style="width:14px;"></i> Import Data
+            </a>
+            <a href="{% url 'analytics:stock_kpis' %}" class="btn btn-outline-success btn-sm">
+                <i data-lucide="package" style="width:14px;"></i> Stock KPIs
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 opacity-75">Total Revenue</h6>
+                    <h2 class="card-title mb-0">₹{{ total_revenue|floatformat:0|default:0 }}</h2>
+                    <small class="opacity-75">{{ sales_count }} transactions</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 opacity-75">Total Returns</h6>
+                    <h2 class="card-title mb-0">₹{{ total_returns|floatformat:0|default:0 }}</h2>
+                    <small class="opacity-75">{{ returns_count }} returns</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 opacity-75">Net Sales</h6>
+                    <h2 class="card-title mb-0">₹{{ net_sales|floatformat:0|default:0 }}</h2>
+                    <small class="opacity-75">Revenue - Returns</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-subtitle mb-2 opacity-75">Avg Order Value</h6>
+                    <h2 class="card-title mb-0">₹{{ avg_order_value|floatformat:0|default:0 }}</h2>
+                    <small class="opacity-75">Margin: {{ margin_percentage|floatformat:1 }}%</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Sales Trend Chart -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0"><i data-lucide="line-chart" class="me-2" style="width:18px;"></i>Daily Sales Trend
+                        (Last 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendChart" height="100"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales by Category -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0"><i data-lucide="pie-chart" class="me-2" style="width:18px;"></i>Sales by Category
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales by Location -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0"><i data-lucide="map-pin" class="me-2" style="width:18px;"></i>Top Locations</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="locationChart" height="150"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Sales People -->
+        <div class="col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0"><i data-lucide="users" class="me-2" style="width:18px;"></i>Top Sales People</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th class="text-end">Sales</th>
+                                <th class="text-end">Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for person in top_sales_people %}
+                            <tr>
+                                <td>{{ person.sales_person|truncatechars:25 }}</td>
+                                <td class="text-end">₹{{ person.total|floatformat:0 }}</td>
+                                <td class="text-end">{{ person.count }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">No data</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Products -->
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0"><i data-lucide="award" class="me-2" style="width:18px;"></i>Top Selling Products
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:80px;">Image</th>
+                                <th>Style Code</th>
+                                <th>Category</th>
+                                <th class="text-end">Total Sales</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Margin</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr>
+                                <td>
+                                    <img src="https://fireflylgd-assets.s3.eu-north-1.amazonaws.com/public/shopify/compressed-images/{{ product.style_code|slice:':3' }}/{{ product.style_code }}.jpg"
+                                        width="50" height="50" class="rounded"
+                                        onerror="this.src='https://via.placeholder.com/50?text=No+Img'">
+                                </td>
+                                <td><strong>{{ product.style_code }}</strong></td>
+                                <td>{{ product.product_category|default:"-" }}</td>
+                                <td class="text-end text-success fw-bold">₹{{ product.total|floatformat:0 }}</td>
+                                <td class="text-end">{{ product.count }}</td>
+                                <td class="text-end">₹{{ product.margin|floatformat:0|default:0 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">No data</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Trend Chart
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: {{ trend_labels| safe }},
+        datasets: [{
+            label: 'Daily Sales',
+            data: {{ trend_values| safe }},
+        borderColor: 'rgb(59, 130, 246)',
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        fill: true,
+        tension: 0.4
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    // Category Chart
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ category_labels| safe }},
+        datasets: [{
+            data: {{ category_values| safe }},
+        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#ec4899']
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+    });
+
+    // Location Chart
+    new Chart(document.getElementById('locationChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ location_labels| safe }},
+        datasets: [{
+            label: 'Sales',
+            data: {{ location_values| safe }},
+        backgroundColor: 'rgba(16, 185, 129, 0.8)'
+            }]
+        },
+        options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } } }
+    });
+</script>
+{% endblock %}
