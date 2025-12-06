@@ -98,10 +98,12 @@ DATABASES = {
         'NAME': 'darpan_high',
         'USER': config('ORACLE_DB_USER', default='admin'),
         'PASSWORD': config('ORACLE_DB_PASSWORD', default=''),
+        'CONN_MAX_AGE': 600,  # Connection pooling - 10 minutes
         'OPTIONS': {
             'wallet_location': BASE_DIR / 'wallet',
             'config_dir': BASE_DIR / 'wallet',
             'wallet_password': config('ORACLE_WALLET_PASSWORD', default=None),
+            'threaded': True,
         },
     }
 }
@@ -185,3 +187,66 @@ SESSION_COOKIE_SAMESITE = 'Lax'
 
 # Base URL for the application
 BASE_URL = config('BASE_URL', default='http://localhost:8000')
+
+
+# =============================================================================
+# PRODUCTION SECURITY SETTINGS
+# These settings only activate when DEBUG=False
+# =============================================================================
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SECURE_HSTS_SECONDS = 31536000  # 1 year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+
+
+# =============================================================================
+# LOGGING CONFIGURATION
+# =============================================================================
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'file': {
+            'level': 'ERROR',
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'error.log',
+            'formatter': 'verbose',
+        },
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps': {
+            'handlers': ['console', 'file'] if not DEBUG else ['console'],
+            'level': 'DEBUG' if DEBUG else 'ERROR',
+            'propagate': False,
+        },
+    },
+}

@@ -4,10 +4,13 @@ Supports CSV, Excel (.xlsx), and JSON formats with intelligent field mapping.
 """
 
 from abc import ABC, abstractmethod
+import logging
 import pandas as pd
 import io
 from django.core.exceptions import ValidationError
 from django.db import transaction
+
+logger = logging.getLogger(__name__)
 
 
 class BaseImporter(ABC):
@@ -157,7 +160,15 @@ class SalesImporter(BaseImporter):
         
         # Bulk create for performance
         if records_to_create:
-            SalesRecord.objects.bulk_create(records_to_create, batch_size=1000)
+            try:
+                SalesRecord.objects.bulk_create(
+                    records_to_create, 
+                    batch_size=1000, 
+                    ignore_conflicts=True
+                )
+            except Exception as e:
+                logger.error(f"Bulk create failed: {e}")
+                self.warnings.append(f"Bulk import error: {str(e)}")
         
         return {'created': created, 'updated': updated, 'skipped': skipped}
 
