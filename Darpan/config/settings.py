@@ -194,7 +194,9 @@ BASE_URL = config('BASE_URL', default='http://localhost:8000')
 # These settings only activate when DEBUG=False
 # =============================================================================
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+    # NOTE: SECURE_SSL_REDIRECT is disabled because Nginx handles SSL termination
+    # Enabling it causes redirect loops when behind a reverse proxy
+    SECURE_SSL_REDIRECT = False  # Nginx handles SSL
     SECURE_HSTS_SECONDS = 31536000  # 1 year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
