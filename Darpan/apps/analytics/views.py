@@ -26,32 +26,128 @@ class DashboardAccessMixin(UserPassesTestMixin):
 
 
 class AnalyticsDashboardView(LoginRequiredMixin, DashboardAccessMixin, TemplateView):
+    """Comprehensive MIS Dashboard combining Sales, Stock, and CRM data"""
     template_name = 'analytics/dashboard.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         company = self.request.user.company
         
-        records = SalesRecord.objects.filter(company=company).order_by('transaction_date')
+        if not company:
+            # Fallback for users without company
+            from apps.core.models import Company
+            company = Company.objects.first()
         
-        total_revenue = records.aggregate(Sum('revenue'))['revenue__sum'] or 0
-        context['total_revenue'] = total_revenue
-        context['sales_count'] = records.count()
+        # ============== SALES KPIs ==============
+        sales_qs = SalesRecord.objects.filter(company=company) if company else SalesRecord.objects.none()
+        sales_only = sales_qs.filter(transaction_type='sale')
+        returns_only = sales_qs.filter(transaction_type='return')
         
-        sales_by_date = {}
-        for record in records:
-            d_str = record.transaction_date.strftime('%Y-%m-%d')
-            sales_by_date[d_str] = sales_by_date.get(d_str, 0) + float(record.revenue)
-            
-        context['chart_dates'] = list(sales_by_date.keys())
-        context['chart_revenues'] = list(sales_by_date.values())
+        total_revenue = sales_only.aggregate(total=Sum('final_amount'))['total'] or 0
+        total_returns = abs(returns_only.aggregate(total=Sum('final_amount'))['total'] or 0)
+        net_sales = total_revenue - total_returns
         
-        context['last_upload'] = SalesRecord.objects.filter(company=company).order_by('-created_at').first()
-        context['max_transaction_date'] = records.aggregate(Max('transaction_date'))['transaction_date__max']
-        context['current_gold_rate'] = GoldRate.objects.filter(company=company).order_by('-updated_at').first()
+        sales_count = sales_only.count()
+        returns_count = returns_only.count()
+        avg_order_value = net_sales / sales_count if sales_count > 0 else 0
         
-        # Recent imports
-        context['recent_imports'] = ImportLog.objects.filter(company=company)[:5]
+        total_margin = sales_only.aggregate(total=Sum('gross_margin'))['total'] or 0
+        margin_percentage = (total_margin / total_revenue * 100) if total_revenue > 0 else 0
+        
+        context.update({
+            'total_revenue': total_revenue,
+            'total_returns': total_returns,
+            'net_sales': net_sales,
+            'sales_count': sales_count,
+            'returns_count': returns_count,
+            'avg_order_value': avg_order_value,
+            'total_margin': total_margin,
+            'margin_percentage': margin_percentage,
+        })
+        
+        # ============== STOCK KPIs ==============
+        stock_qs = StockSnapshot.objects.filter(company=company) if company else StockSnapshot.objects.none()
+        
+        # Get latest snapshot
+        latest_date = stock_qs.aggregate(Max('snapshot_date'))['snapshot_date__max']
+        if latest_date:
+            stock_qs = stock_qs.filter(snapshot_date=latest_date)
+        
+        total_skus = stock_qs.values('style_code').distinct().count()
+        stock_qty = stock_qs.aggregate(total=Sum('quantity'))['total'] or 0
+        stock_value = stock_qs.aggregate(total=Sum(F('quantity') * F('sale_price')))['total'] or 0
+        total_weight = stock_qs.aggregate(total=Sum('gross_weight'))['total'] or 0
+        low_stock_count = stock_qs.filter(quantity__lt=2, quantity__gt=0).count()
+        
+        context.update({
+            'total_skus': total_skus,
+            'stock_qty': stock_qty,
+            'stock_value': stock_value,
+            'total_weight': total_weight,
+            'low_stock_count': low_stock_count,
+        })
+        
+        # ============== SALES TREND (Last 30 days) ==============
+        from django.utils import timezone
+        from datetime import timedelta
+        from collections import defaultdict
+        import json
+        
+        thirty_days_ago = timezone.now().date() - timedelta(days=30)
+        recent_sales = sales_only.filter(transaction_date__gte=thirty_days_ago).values('transaction_date', 'final_amount')
+        
+        daily_totals = defaultdict(float)
+        for sale in recent_sales:
+            if sale['transaction_date'] and sale['final_amount']:
+                daily_totals[sale['transaction_date']] += float(sale['final_amount'])
+        
+        sorted_days = sorted(daily_totals.keys())
+        context['trend_labels'] = json.dumps([day.strftime('%d %b') for day in sorted_days])
+        context['trend_values'] = json.dumps([daily_totals[day] for day in sorted_days])
+        
+        # ============== SALES BY CATEGORY ==============
+        category_data = sales_only.values('product_category').annotate(
+            total=Sum('final_amount')
+        ).order_by('-total')[:8]
+        
+        context['category_labels'] = json.dumps([item['product_category'] or 'Other' for item in category_data])
+        context['category_values'] = json.dumps([float(item['total'] or 0) for item in category_data])
+        
+        # ============== SALES BY LOCATION ==============
+        location_data = sales_only.values('region').annotate(
+            total=Sum('final_amount')
+        ).order_by('-total')[:8]
+        
+        context['location_labels'] = json.dumps([item['region'] or 'Unknown' for item in location_data])
+        context['location_values'] = json.dumps([float(item['total'] or 0) for item in location_data])
+        
+        # ============== STOCK BY LOCATION ==============
+        stock_location_data = stock_qs.values('location').annotate(
+            value=Sum(F('quantity') * F('sale_price'))
+        ).order_by('-value')[:8]
+        
+        context['stock_location_labels'] = json.dumps([item['location'] or 'Unknown' for item in stock_location_data])
+        context['stock_location_values'] = json.dumps([float(item['value'] or 0) for item in stock_location_data])
+        
+        # ============== TOP PRODUCTS ==============
+        top_products = sales_only.values('style_code', 'product_category').annotate(
+            total=Sum('final_amount'),
+            count=Count('id')
+        ).order_by('-total')[:10]
+        context['top_products'] = list(top_products)
+        
+        # ============== TOP SALES PEOPLE ==============
+        top_sales_people = sales_only.exclude(sales_person='').values('sales_person').annotate(
+            total=Sum('final_amount'),
+            count=Count('id')
+        ).order_by('-total')[:10]
+        context['top_sales_people'] = list(top_sales_people)
+        
+        # ============== RECENT IMPORTS ==============
+        if company:
+            context['recent_imports'] = ImportLog.objects.filter(company=company).order_by('-imported_at')[:5]
+        else:
+            context['recent_imports'] = []
         
         return context
 

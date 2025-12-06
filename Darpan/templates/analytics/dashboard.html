@@ -1,0 +1,521 @@
+{% extends "base/base.html" %}
+
+{% block title %}Analytics Dashboard - MIS{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<style>
+    .kpi-card {
+        border-radius: 12px;
+        border: none;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .kpi-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+    }
+
+    .kpi-label {
+        font-size: 0.85rem;
+        opacity: 0.9;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .kpi-change {
+        font-size: 0.75rem;
+    }
+
+    .chart-card {
+        border-radius: 12px;
+        border: none;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .section-title {
+        font-weight: 600;
+        color: #333;
+        border-left: 4px solid #667eea;
+        padding-left: 12px;
+    }
+
+    .gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .gradient-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+
+    .gradient-warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+
+    .gradient-info {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+
+    .gradient-dark {
+        background: linear-gradient(135deg, #434343 0%, #000000 100%);
+    }
+
+    .gradient-orange {
+        background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    }
+
+    .table-kpi th {
+        background: #f8f9fa;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+
+    .quick-link {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .quick-link:hover .card {
+        background: #f8f9fa;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0"><i data-lucide="bar-chart-3" class="me-2" style="width:32px;"></i>Analytics Dashboard</h2>
+            <small class="text-muted">Multi-Dimensional Business Intelligence</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'analytics:import' %}" class="btn btn-primary">
+                <i data-lucide="upload" style="width:16px;"></i> Import Data
+            </a>
+        </div>
+    </div>
+
+    <!-- Primary KPIs Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card kpi-card gradient-success text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="kpi-label mb-1">Total Revenue</p>
+                            <h2 class="kpi-value mb-0">₹{{ total_revenue|floatformat:0|default:0 }}</h2>
+                            <small class="kpi-change">{{ sales_count|default:0 }} transactions</small>
+                        </div>
+                        <i data-lucide="indian-rupee" style="width:32px; height:32px; opacity:0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card kpi-card gradient-warning text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="kpi-label mb-1">Total Returns</p>
+                            <h2 class="kpi-value mb-0">₹{{ total_returns|floatformat:0|default:0 }}</h2>
+                            <small class="kpi-change">{{ returns_count|default:0 }} returns</small>
+                        </div>
+                        <i data-lucide="rotate-ccw" style="width:32px; height:32px; opacity:0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card kpi-card gradient-primary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="kpi-label mb-1">Net Sales</p>
+                            <h2 class="kpi-value mb-0">₹{{ net_sales|floatformat:0|default:0 }}</h2>
+                            <small class="kpi-change">Margin: {{ margin_percentage|floatformat:1|default:0 }}%</small>
+                        </div>
+                        <i data-lucide="trending-up" style="width:32px; height:32px; opacity:0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card kpi-card gradient-info text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="kpi-label mb-1">Avg Order Value</p>
+                            <h2 class="kpi-value mb-0">₹{{ avg_order_value|floatformat:0|default:0 }}</h2>
+                            <small class="kpi-change">Per transaction</small>
+                        </div>
+                        <i data-lucide="shopping-bag" style="width:32px; height:32px; opacity:0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary KPIs Row - Stock -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card kpi-card gradient-dark text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="kpi-label mb-1">Stock Value</p>
+                            <h2 class="kpi-value mb-0">₹{{ stock_value|floatformat:0|default:0 }}</h2>
+                            <small class="kpi-change">{{ stock_qty|default:0 }} items</small>
+                        </div>
+                        <i data-lucide="package" style="width:32px; height:32px; opacity:0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card kpi-card gradient-orange text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="kpi-label mb-1">Unique SKUs</p>
+                            <h2 class="kpi-value mb-0">{{ total_skus|default:0 }}</h2>
+                            <small class="kpi-change">Style codes</small>
+                        </div>
+                        <i data-lucide="layers" style="width:32px; height:32px; opacity:0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card kpi-card bg-danger text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="kpi-label mb-1">Low Stock Alert</p>
+                            <h2 class="kpi-value mb-0">{{ low_stock_count|default:0 }}</h2>
+                            <small class="kpi-change">Items (qty &lt; 2)</small>
+                        </div>
+                        <i data-lucide="alert-triangle" style="width:32px; height:32px; opacity:0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card kpi-card bg-secondary text-white h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="kpi-label mb-1">Total Weight</p>
+                            <h2 class="kpi-value mb-0">{{ total_weight|floatformat:2|default:0 }}g</h2>
+                            <small class="kpi-change">Gross weight</small>
+                        </div>
+                        <i data-lucide="scale" style="width:32px; height:32px; opacity:0.5;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row g-4 mb-4">
+        <!-- Sales Trend -->
+        <div class="col-lg-8">
+            <div class="card chart-card h-100">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="section-title mb-0">Sales Trend (Last 30 Days)</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="salesTrendChart" height="120"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Category Distribution -->
+        <div class="col-lg-4">
+            <div class="card chart-card h-100">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="section-title mb-0">Sales by Category</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Location & Products Row -->
+    <div class="row g-4 mb-4">
+        <!-- Top Locations -->
+        <div class="col-lg-6">
+            <div class="card chart-card h-100">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="section-title mb-0">Sales by Location</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="locationChart" height="180"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Stock by Location -->
+        <div class="col-lg-6">
+            <div class="card chart-card h-100">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="section-title mb-0">Stock Value by Location</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="stockLocationChart" height="180"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables Row -->
+    <div class="row g-4 mb-4">
+        <!-- Top Products -->
+        <div class="col-lg-6">
+            <div class="card chart-card">
+                <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="section-title mb-0">Top Selling Products</h5>
+                    <a href="{% url 'analytics:sales_kpis' %}" class="btn btn-sm btn-outline-primary">View All</a>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover table-kpi mb-0">
+                        <thead>
+                            <tr>
+                                <th style="width:60px;">Image</th>
+                                <th>Style Code</th>
+                                <th>Category</th>
+                                <th class="text-end">Sales</th>
+                                <th class="text-end">Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr>
+                                <td>
+                                    <img src="https://fireflylgd-assets.s3.eu-north-1.amazonaws.com/public/shopify/compressed-images/{{ product.style_code|slice:':3' }}/{{ product.style_code }}.jpg"
+                                        width="40" height="40" class="rounded"
+                                        onerror="this.src='https://via.placeholder.com/40?text=?'">
+                                </td>
+                                <td><strong>{{ product.style_code }}</strong></td>
+                                <td class="small text-muted">{{ product.product_category|default:"-"|truncatechars:15 }}
+                                </td>
+                                <td class="text-end text-success fw-bold">₹{{ product.total|floatformat:0 }}</td>
+                                <td class="text-end">{{ product.count }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">No sales data yet. <a
+                                        href="{% url 'analytics:import' %}">Import sales data</a></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Sales People -->
+        <div class="col-lg-6">
+            <div class="card chart-card">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="section-title mb-0">Top Sales People</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover table-kpi mb-0">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Name</th>
+                                <th class="text-end">Revenue</th>
+                                <th class="text-end">Transactions</th>
+                                <th class="text-end">Contribution</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for person in top_sales_people %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td><strong>{{ person.sales_person|truncatechars:25 }}</strong></td>
+                                <td class="text-end text-success">₹{{ person.total|floatformat:0 }}</td>
+                                <td class="text-end">{{ person.count }}</td>
+                                <td class="text-end">
+                                    {% widthratio person.total total_revenue 100 as contrib %}
+                                    <span class="badge bg-primary">{{ contrib }}%</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">No sales person data</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions & Recent Imports -->
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card chart-card">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="section-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'analytics:sales_kpis' %}" class="btn btn-outline-primary">
+                            <i data-lucide="trending-up" class="me-2" style="width:18px;"></i>Sales KPIs
+                        </a>
+                        <a href="{% url 'analytics:stock_kpis' %}" class="btn btn-outline-success">
+                            <i data-lucide="package" class="me-2" style="width:18px;"></i>Stock KPIs
+                        </a>
+                        <a href="{% url 'analytics:import' %}" class="btn btn-outline-dark">
+                            <i data-lucide="upload" class="me-2" style="width:18px;"></i>Import Data
+                        </a>
+                        <a href="{% url 'analytics:import_history' %}" class="btn btn-outline-secondary">
+                            <i data-lucide="history" class="me-2" style="width:18px;"></i>Import History
+                        </a>
+                        <a href="{% url 'tools:stock_lookup' %}" class="btn btn-outline-info">
+                            <i data-lucide="search" class="me-2" style="width:18px;"></i>Stock Lookup
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card chart-card">
+                <div class="card-header bg-white py-3 border-0">
+                    <h5 class="section-title mb-0">Recent Imports</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover table-kpi mb-0">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>File</th>
+                                <th>Date</th>
+                                <th class="text-center">Rows</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recent_imports %}
+                            <tr>
+                                <td>
+                                    <span
+                                        class="badge bg-{% if log.file_type == 'sales' %}primary{% elif log.file_type == 'stock' %}success{% else %}secondary{% endif %}">
+                                        {{ log.file_type|upper }}
+                                    </span>
+                                </td>
+                                <td>{{ log.file_name|truncatechars:30 }}</td>
+                                <td class="small text-muted">{{ log.imported_at|date:"d M, H:i" }}</td>
+                                <td class="text-center">{{ log.rows_imported }}</td>
+                                <td>
+                                    {% if log.columns_unmapped %}
+                                    <span class="badge bg-warning text-dark">{{ log.columns_unmapped|length }}
+                                        unmapped</span>
+                                    {% else %}
+                                    <span class="badge bg-success">Complete</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">No imports yet</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const chartColors = ['#667eea', '#11998e', '#f093fb', '#4facfe', '#fa709a', '#38ef7d', '#fee140', '#764ba2'];
+
+    // Sales Trend Chart
+    {% if trend_labels %}
+    new Chart(document.getElementById('salesTrendChart'), {
+        type: 'line',
+        data: {
+            labels: {{ trend_labels| safe }},
+        datasets: [{
+            label: 'Daily Sales',
+            data: {{ trend_values| safe }},
+        borderColor: '#667eea',
+        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 4,
+        pointHoverRadius: 6
+            }]
+        },
+        options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, ticks: { callback: v => '₹' + (v / 1000).toFixed(0) + 'K' } }
+        }
+    }
+    });
+    {% endif %}
+
+    // Category Chart
+    {% if category_labels %}
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ category_labels| safe }},
+        datasets: [{
+            data: {{ category_values| safe }},
+        backgroundColor: chartColors
+            }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
+    });
+    {% endif %}
+
+    // Location Chart
+    {% if location_labels %}
+    new Chart(document.getElementById('locationChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ location_labels| safe }},
+        datasets: [{
+            label: 'Sales',
+            data: {{ location_values| safe }},
+        backgroundColor: '#11998e'
+            }]
+        },
+        options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } } }
+    });
+    {% endif %}
+
+    // Stock Location Chart
+    {% if stock_location_labels %}
+    new Chart(document.getElementById('stockLocationChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ stock_location_labels| safe }},
+        datasets: [{
+            label: 'Value',
+            data: {{ stock_location_values| safe }},
+        backgroundColor: '#4facfe'
+            }]
+        },
+        options: { responsive: true, indexAxis: 'y', plugins: { legend: { display: false } } }
+    });
+    {% endif %}
+</script>
+{% endblock %}
