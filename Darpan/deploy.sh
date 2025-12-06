@@ -9,6 +9,11 @@ echo "📦 Pulling latest changes from git..."
 git pull origin main
 
 # 2. Activate virtual environment
+if [ ! -d "venv" ]; then
+    echo "🔨 Creating virtual environment..."
+    python3 -m venv venv
+fi
+
 echo "🔌 Activating virtual environment..."
 source venv/bin/activate
 
