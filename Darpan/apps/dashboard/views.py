@@ -5,8 +5,8 @@ Portal home with pending actions, celebrations, and announcements.
 
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Q
-from datetime import date
+from django.db.models import Count, Q, Sum, Max, F
+from datetime import date, timedelta
 from apps.core.models import User, Announcement
 from apps.core.utils import check_role, has_any_role
 
@@ -68,7 +68,48 @@ def portal_home(request):
             is_active=True
         ).order_by('-post_date')[:3]
     
-    # Calculate pending actions (placeholder - will be filled when other modules are created)
+    # ============== REAL KPI DATA ==============
+    total_revenue = 0
+    sales_count = 0
+    stock_value = 0
+    tasks_complete = 0
+    tasks_pending = 0
+    
+    if company:
+        # Get sales revenue from analytics
+        try:
+            from apps.analytics.models import SalesRecord, StockSnapshot
+            
+            # Sales data - this month
+            month_start = date.today().replace(day=1)
+            sales_qs = SalesRecord.objects.filter(
+                company=company,
+                transaction_type='sale',
+                transaction_date__gte=month_start
+            )
+            total_revenue = sales_qs.aggregate(total=Sum('final_amount'))['total'] or 0
+            sales_count = sales_qs.count()
+            
+            # Stock value
+            stock_qs = StockSnapshot.objects.filter(company=company)
+            latest_date = stock_qs.aggregate(Max('snapshot_date'))['snapshot_date__max']
+            if latest_date:
+                stock_value = stock_qs.filter(snapshot_date=latest_date).aggregate(
+                    total=Sum(F('quantity') * F('sale_price'))
+                )['total'] or 0
+        except:
+            pass
+        
+        # Get tasks data
+        try:
+            from apps.tasks.models import Task
+            user_tasks = Task.objects.filter(assigned_to=user)
+            tasks_complete = user_tasks.filter(status='completed').count()
+            tasks_pending = user_tasks.exclude(status='completed').count()
+        except:
+            pass
+    
+    # Calculate pending actions
     pending_reports_count = 0
     reports_to_verify_count = 0
     pending_btl_count = 0
@@ -76,15 +117,14 @@ def portal_home(request):
     pending_stock_incoming_count = 0
     pending_stock_shipped_count = 0
     
-    # TODO: Add actual queries when expense, BTL, purchasing, and stock modules are created
-    
     total_pending_actions = (
         pending_reports_count + 
         reports_to_verify_count + 
         pending_btl_count + 
         pending_po_count + 
         pending_stock_incoming_count + 
-        pending_stock_shipped_count
+        pending_stock_shipped_count +
+        tasks_pending
     )
     
     # Check user roles
@@ -117,6 +157,12 @@ def portal_home(request):
         'is_order_team': is_order_team,
         'is_purchase_team': is_purchase_team,
         'can_manage_referrals': can_manage_referrals,
+        # Real KPI data
+        'total_revenue': total_revenue,
+        'sales_count': sales_count,
+        'stock_value': stock_value,
+        'tasks_complete': tasks_complete,
+        'tasks_pending': tasks_pending,
     }
     
     return render(request, 'dashboard/portal_home.html', context)
