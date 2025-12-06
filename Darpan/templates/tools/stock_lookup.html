@@ -32,7 +32,7 @@
                                 <option value="all">All Categories</option>
                                 {% for cat in categories %}
                                 {% if cat %}
-                                <option value="{{ cat }}" {% if current_filters.category == cat %}selected{% endif %}>{{
+                                <option value="{{ cat }}" {% if current_filters.category==cat %}selected{% endif %}>{{
                                     cat }}</option>
                                 {% endif %}
                                 {% endfor %}
@@ -45,7 +45,7 @@
                                 <option value="all">All Metals</option>
                                 {% for metal in metals %}
                                 {% if metal %}
-                                <option value="{{ metal }}" {% if current_filters.metal == metal %}selected{% endif %}>{{
+                                <option value="{{ metal }}" {% if current_filters.metal==metal %}selected{% endif %}>{{
                                     metal }}</option>
                                 {% endif %}
                                 {% endfor %}
@@ -58,7 +58,7 @@
                                 <option value="all">All Sizes</option>
                                 {% for size in sizes %}
                                 {% if size %}
-                                <option value="{{ size }}" {% if current_filters.size == size %}selected{% endif %}>{{
+                                <option value="{{ size }}" {% if current_filters.size==size %}selected{% endif %}>{{
                                     size }}</option>
                                 {% endif %}
                                 {% endfor %}
@@ -71,7 +71,7 @@
                                 <option value="all">All Locations</option>
                                 {% for loc in locations %}
                                 {% if loc %}
-                                <option value="{{ loc }}" {% if current_filters.location == loc %}selected{% endif %}>{{
+                                <option value="{{ loc }}" {% if current_filters.location==loc %}selected{% endif %}>{{
                                     loc }}</option>
                                 {% endif %}
                                 {% endfor %}
@@ -108,21 +108,18 @@
                 </h4>
             </div>
 
-            {% if inventory_items %}
+            {% if stock_items %}
             <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
-                {% for item in inventory_items %}
+                {% for item in stock_items %}
                 <div class="col">
                     <div class="card h-100 shadow-sm product-card">
-                        <!-- Image Placeholder (Replace with actual image logic if available) -->
+                        <!-- Product Image from S3 -->
                         <div class="bg-light d-flex align-items-center justify-content-center"
                             style="height: 200px; overflow: hidden;">
-                            {% if item.product.style_code %}
-                            <!-- Construct Image URL based on Style Code (Legacy Logic) -->
-                            <!-- Assuming a helper or just direct construction for now -->
-                            <img src="https://fireflylgd-assets.s3.eu-north-1.amazonaws.com/public/shopify/compressed-images/{{ item.product.style_code|slice:"
-                                :3" }}/{{ item.product.style_code }}.jpg" class="card-img-top"
-                                alt="{{ item.product.name }}"
-                                onerror="this.onerror=null; this.src='https://via.placeholder.com/300x300?text=No+Image';">
+                            {% if item.style_code %}
+                            <img src="https://fireflylgd-assets.s3.eu-north-1.amazonaws.com/public/shopify/compressed-images/{{ item.style_code|slice:':3' }}/{{ item.style_code }}.jpg"
+                                class="card-img-top" alt="{{ item.style_code }}"
+                                onerror="this.onerror=null; this.src='https://via.placeholder.com/300x300?text={{ item.style_code|slice:':6' }}';">
                             {% else %}
                             <span class="text-muted"><i data-lucide="image"
                                     style="width: 48px; height: 48px;"></i></span>
@@ -130,38 +127,37 @@
                         </div>
 
                         <div class="card-body">
-                            <h6 class="card-title text-truncate" title="{{ item.product.name }}">{{ item.product.name }}
+                            <h6 class="card-title text-truncate" title="{{ item.style_code }}">
+                                {{ item.style_code }}
                             </h6>
                             <p class="card-text small mb-1">
-                                <span class="badge bg-secondary">{{ item.product.sku }}</span>
-                                {% if item.product.style_code %}
-                                <span class="badge bg-info text-dark">{{ item.product.style_code }}</span>
+                                <span class="badge bg-secondary">{{ item.category }}</span>
+                                {% if item.sub_category %}
+                                <span class="badge bg-info text-dark">{{ item.sub_category }}</span>
                                 {% endif %}
                             </p>
+                            <p class="card-text small text-muted mb-1">
+                                {{ item.base_metal }} | {{ item.gross_weight }}g
+                                {% if item.diamond_pieces %} | {{ item.diamond_pieces }} dia{% endif %}
+                            </p>
+                            {% if item.certificate_no %}
+                            <p class="card-text small mb-1">
+                                <span class="badge bg-warning text-dark"><i data-lucide="award" style="width:12px;"></i>
+                                    {{ item.certificate_no }}</span>
+                            </p>
+                            {% endif %}
                             <div class="d-flex justify-content-between align-items-center mt-2">
-                                <span class="fw-bold text-success">₹{{ item.product.sale_price|floatformat:0 }}</span>
+                                <span class="fw-bold text-success">₹{{ item.sale_price|floatformat:0 }}</span>
                                 <span class="badge {% if item.quantity > 0 %}bg-success{% else %}bg-danger{% endif %}">
                                     Qty: {{ item.quantity }}
                                 </span>
                             </div>
                             <div class="mt-2 small text-muted">
-                                <i data-lucide="map-pin" style="width: 14px;"></i> {{ item.store.name }}
+                                <i data-lucide="map-pin" style="width: 14px;"></i> {{ item.location }}
                             </div>
                         </div>
-                        <div class="card-footer bg-white border-top-0">
-                            {% if item.quantity > 0 and item.store != user.store %}
-                            <form method="post" action="{% url 'stock:quick_request' %}">
-                                {% csrf_token %}
-                                <input type="hidden" name="inventory_id" value="{{ item.id }}">
-                                <button type="submit" class="btn btn-sm btn-outline-primary w-100">
-                                    Request Transfer
-                                </button>
-                            </form>
-                            {% else %}
-                            <button class="btn btn-sm btn-secondary w-100" disabled>
-                                {% if item.store == user.store %}In Your Store{% else %}Out of Stock{% endif %}
-                            </button>
-                            {% endif %}
+                        <div class="card-footer bg-white border-top-0 small text-muted">
+                            Jewel: {{ item.jewel_code|truncatechars:20 }}
                         </div>
                     </div>
                 </div>
@@ -196,6 +192,7 @@
                 <i data-lucide="search-x" class="mb-3" style="width: 48px; height: 48px;"></i>
                 <h5>No products found</h5>
                 <p class="text-muted">Try adjusting your filters or search query.</p>
+                <a href="{% url 'analytics:import' %}" class="btn btn-primary mt-2">Import Stock Data</a>
             </div>
             {% endif %}
         </div>

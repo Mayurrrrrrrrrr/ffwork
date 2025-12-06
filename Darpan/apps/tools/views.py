@@ -3,91 +3,128 @@ Views for Tools module.
 """
 
 from django.views.generic import TemplateView, ListView
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q
-from apps.stock.models import Product, Inventory
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.db.models import Q, Max
+from apps.analytics.models import StockSnapshot
+
 
 class ToolsIndexView(LoginRequiredMixin, TemplateView):
     template_name = 'tools/index.html'
 
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 
 class StockAccessRequiredMixin(UserPassesTestMixin):
     def test_func(self):
         # Allow admin, platform_admin, and store_manager
         return self.request.user.is_superuser or self.request.user.has_any_role(['admin', 'platform_admin', 'store_manager'])
 
+
 class StockLookupView(LoginRequiredMixin, StockAccessRequiredMixin, ListView):
-    model = Inventory
+    """Stock lookup using imported StockSnapshot data"""
+    model = StockSnapshot
     template_name = 'tools/stock_lookup.html'
-    context_object_name = 'inventory_items'
-    paginate_by = 20
+    context_object_name = 'stock_items'
+    paginate_by = 24
 
     def get_queryset(self):
-        queryset = Inventory.objects.filter(company=self.request.user.company).select_related('product', 'store')
+        company = self.request.user.company
+        if not company:
+            from apps.core.models import Company
+            company = Company.objects.first()
         
-        # Search Query (Name, SKU, Store)
+        if not company:
+            return StockSnapshot.objects.none()
+        
+        queryset = StockSnapshot.objects.filter(company=company)
+        
+        # Get latest snapshot date
+        latest_date = queryset.aggregate(Max('snapshot_date'))['snapshot_date__max']
+        if latest_date:
+            queryset = queryset.filter(snapshot_date=latest_date)
+        
+        # Search Query (Style Code, Jewel Code, Category, Location)
         query = self.request.GET.get('q')
         if query:
             queryset = queryset.filter(
-                Q(product__name__icontains=query) | 
-                Q(product__sku__icontains=query) |
-                Q(store__name__icontains=query)
+                Q(style_code__icontains=query) | 
+                Q(jewel_code__icontains=query) |
+                Q(category__icontains=query) |
+                Q(location__icontains=query) |
+                Q(certificate_no__icontains=query)
             )
             
         # Advanced Filters
         category = self.request.GET.get('category')
         if category and category != 'all':
-            queryset = queryset.filter(product__category=category)
+            queryset = queryset.filter(category=category)
             
         metal = self.request.GET.get('metal')
         if metal and metal != 'all':
-            queryset = queryset.filter(product__base_metal=metal)
+            queryset = queryset.filter(base_metal=metal)
             
         size = self.request.GET.get('size')
         if size and size != 'all':
-            queryset = queryset.filter(product__size=size)
+            queryset = queryset.filter(item_size=size)
             
         location = self.request.GET.get('location')
         if location and location != 'all':
-            queryset = queryset.filter(store__name=location)
+            queryset = queryset.filter(location=location)
             
         price_min = self.request.GET.get('price_min')
         if price_min:
-            queryset = queryset.filter(product__sale_price__gte=price_min)
+            queryset = queryset.filter(sale_price__gte=price_min)
             
         price_max = self.request.GET.get('price_max')
         if price_max:
-            queryset = queryset.filter(product__sale_price__lte=price_max)
+            queryset = queryset.filter(sale_price__lte=price_max)
 
-        # If no filters applied, return none (or all? Legacy returned none)
-        # Let's return all if "filter" param is present (like legacy) or if any filter is set
-        has_filters = any([query, category, metal, size, location, price_min, price_max])
+        # If no filters applied, return none unless filter param present
+        has_filters = any([query, category and category != 'all', metal and metal != 'all', 
+                          size and size != 'all', location and location != 'all', price_min, price_max])
         
         if has_filters or self.request.GET.get('filter'):
-            return queryset.order_by('product__name', 'store__name')
+            return queryset.order_by('style_code', 'location')
         else:
-            return Inventory.objects.none()
+            return StockSnapshot.objects.none()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         company = self.request.user.company
+        if not company:
+            from apps.core.models import Company
+            company = Company.objects.first()
         
-        # Populate Filter Options (Distinct Values)
-        context['categories'] = Product.objects.filter(company=company).values_list('category', flat=True).distinct().order_by('category')
-        context['metals'] = Product.objects.filter(company=company).values_list('base_metal', flat=True).distinct().order_by('base_metal')
-        context['sizes'] = Product.objects.filter(company=company).values_list('size', flat=True).distinct().order_by('size')
-        context['locations'] = Inventory.objects.filter(company=company).values_list('store__name', flat=True).distinct().order_by('store__name')
+        if company:
+            base_qs = StockSnapshot.objects.filter(company=company)
+            # Get latest snapshot
+            latest_date = base_qs.aggregate(Max('snapshot_date'))['snapshot_date__max']
+            if latest_date:
+                base_qs = base_qs.filter(snapshot_date=latest_date)
+            
+            # Populate Filter Options (Distinct Values)
+            context['categories'] = base_qs.exclude(category='').values_list('category', flat=True).distinct().order_by('category')
+            context['metals'] = base_qs.exclude(base_metal='').values_list('base_metal', flat=True).distinct().order_by('base_metal')
+            context['sizes'] = base_qs.exclude(item_size='').values_list('item_size', flat=True).distinct().order_by('item_size')
+            context['locations'] = base_qs.exclude(location='').values_list('location', flat=True).distinct().order_by('location')
+            context['snapshot_date'] = latest_date
+        else:
+            context['categories'] = []
+            context['metals'] = []
+            context['sizes'] = []
+            context['locations'] = []
         
         # Pass current filters to context
         context['current_filters'] = self.request.GET
         return context
 
+
 class EMICalculatorView(LoginRequiredMixin, TemplateView):
     template_name = 'tools/emi_calculator.html'
+
 
 class SchemeCalculatorView(LoginRequiredMixin, TemplateView):
     template_name = 'tools/scheme_calculator.html'
 
+
 class CertificateGeneratorView(LoginRequiredMixin, TemplateView):
     template_name = 'tools/certificate_generator.html'
+
