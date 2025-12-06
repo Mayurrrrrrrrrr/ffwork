@@ -92,6 +92,9 @@ class FlexibleImporter:
         'CS Wt': 'color_stone_weight',
         'Sale Price': 'sale_price',
         'Date': 'snapshot_date',
+        'Month': 'stock_month',
+        'Year': 'stock_year',
+        'Jewelry CertificateNo': 'certificate_no',
     }
     
     def __init__(self, company, user):
@@ -375,6 +378,9 @@ class FlexibleImporter:
                         sub_category=str(row.get('sub_category', ''))[:100],
                         base_metal=str(row.get('base_metal', ''))[:50],
                         item_size=str(row.get('item_size', ''))[:20],
+                        certificate_no=str(row.get('certificate_no', ''))[:100],
+                        stock_month=str(row.get('stock_month', ''))[:20],
+                        stock_year=self._parse_int(row.get('stock_year')) or None,
                         quantity=self._parse_int(row.get('quantity', 0)),
                         gross_weight=self._parse_decimal(row.get('gross_weight')),
                         net_weight=self._parse_decimal(row.get('net_weight')),

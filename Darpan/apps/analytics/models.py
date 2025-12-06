@@ -124,6 +124,9 @@ class StockSnapshot(models.Model):
     base_metal = models.CharField(max_length=50, blank=True)
     item_size = models.CharField(max_length=20, blank=True)
     
+    # Certificate info
+    certificate_no = models.CharField(max_length=100, blank=True)  # Jewelry CertificateNo
+    
     quantity = models.IntegerField(default=0)
     gross_weight = models.DecimalField(max_digits=10, decimal_places=3, default=0)
     net_weight = models.DecimalField(max_digits=10, decimal_places=3, default=0)
@@ -135,6 +138,10 @@ class StockSnapshot(models.Model):
     color_stone_weight = models.DecimalField(max_digits=10, decimal_places=3, default=0)
     
     sale_price = models.DecimalField(max_digits=15, decimal_places=2, default=0)
+    
+    # Opening stock period
+    stock_month = models.CharField(max_length=20, blank=True)  # e.g., "Oct", "Nov"
+    stock_year = models.IntegerField(null=True, blank=True)  # e.g., 2024
     
     snapshot_date = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
