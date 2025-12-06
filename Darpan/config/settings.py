@@ -252,3 +252,46 @@ LOGGING = {
         },
     },
 }
+
+
+# ============================================
+# CACHING CONFIGURATION
+# ============================================
+# Uses Redis if available, falls back to local memory cache
+REDIS_URL = config('REDIS_URL', default='redis://127.0.0.1:6379/1')
+
+try:
+    import redis
+    # Test Redis connection
+    r = redis.from_url(REDIS_URL)
+    r.ping()
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': REDIS_URL,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            },
+            'TIMEOUT': 300,  # 5 minutes default
+        }
+    }
+except:
+    # Fallback to local memory cache if Redis is not available
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
+    }
+
+
+# ============================================
+# CELERY CONFIGURATION (for async tasks)
+# ============================================
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://127.0.0.1:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://127.0.0.1:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes

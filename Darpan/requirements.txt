@@ -17,6 +17,11 @@ python-decouple==3.8
 # Production Server
 gunicorn==21.2.0
 
+# Caching & Background Tasks
+redis==5.0.1
+celery==5.3.4
+django-redis==5.4.0
+
 # Security (Optional - for future rate limiting)
 # django-ratelimit==4.1.0
 # django-axes==6.1.1

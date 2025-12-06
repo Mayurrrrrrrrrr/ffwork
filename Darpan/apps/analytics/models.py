@@ -97,6 +97,10 @@ class SalesRecord(models.Model):
             models.Index(fields=['company', 'style_code']),
             models.Index(fields=['company', 'transaction_type']),
             models.Index(fields=['company', 'region']),
+            # Performance indexes for dashboard queries
+            models.Index(fields=['company', 'transaction_date', '-final_amount']),
+            models.Index(fields=['company', 'sales_person', 'transaction_date']),
+            models.Index(fields=['transaction_date', 'transaction_type']),
         ]
 
     def __str__(self):
