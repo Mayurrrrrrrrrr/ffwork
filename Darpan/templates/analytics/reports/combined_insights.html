@@ -1,0 +1,146 @@
+{% extends "base/base.html" %}
+
+{% block title %}Combined Insights{% endblock %}
+
+{% block navbar %}{% include "base/navbar.html" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i data-lucide="layers" class="me-2"></i>Combined Insights (CRM + Sales)</h2>
+        <a href="{% url 'analytics:reports_menu' %}" class="btn btn-outline-secondary">
+            <i data-lucide="arrow-left" class="me-1"></i> Reports
+        </a>
+    </div>
+
+    <!-- Customer Match KPIs -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-2">
+            <div class="card border-0 bg-primary text-white">
+                <div class="card-body text-center">
+                    <h6 class="opacity-75">CRM Contacts</h6>
+                    <h3>{{ crm_total|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 bg-success text-white">
+                <div class="card-body text-center">
+                    <h6 class="opacity-75">Sales Customers</h6>
+                    <h3>{{ sales_customers|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card border-0 bg-info text-white">
+                <div class="card-body text-center">
+                    <h6 class="opacity-75">Matched</h6>
+                    <h3>{{ matched_customers|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h6 class="opacity-75">CRM (Not Purchased)</h6>
+                    <h3>{{ crm_not_purchased|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-secondary text-white">
+                <div class="card-body text-center">
+                    <h6 class="opacity-75">Sales (Not in CRM)</h6>
+                    <h3>{{ sales_not_in_crm|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Lead Source Conversion -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Lead Source Conversion</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Source</th>
+                                <th class="text-end">Total</th>
+                                <th class="text-end">Purchased</th>
+                                <th class="text-end">Conversion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for l in lead_conversion %}
+                            <tr>
+                                <td>{{ l.source }}</td>
+                                <td class="text-end">{{ l.total }}</td>
+                                <td class="text-end">{{ l.purchased }}</td>
+                                <td class="text-end">
+                                    <span
+                                        class="badge {% if l.conversion_rate >= 20 %}bg-success{% elif l.conversion_rate >= 10 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                        {{ l.conversion_rate }}%
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}<tr>
+                                <td colspan="4" class="text-muted text-center">No CRM data</td>
+                            </tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Buyers from CRM -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Top CRM Customers (by Spend)</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Mobile</th>
+                                <th class="text-end">Spent</th>
+                                <th class="text-end">Orders</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in top_buyers %}
+                            <tr>
+                                <td>{{ b.client_name|truncatewords:3 }}</td>
+                                <td>{{ b.client_mobile }}</td>
+                                <td class="text-end">₹{{ b.total_spent|floatformat:0 }}</td>
+                                <td class="text-end">{{ b.order_count }}</td>
+                            </tr>
+                            {% empty %}<tr>
+                                <td colspan="4" class="text-muted text-center">No matched customers</td>
+                            </tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-2">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i data-lucide="info" class="me-2"></i>
+                <strong>Insights:</strong>
+                {% if crm_not_purchased > 0 %}{{ crm_not_purchased }} CRM contacts have not made a purchase - consider
+                targeted outreach.{% endif %}
+                {% if sales_not_in_crm > 0 %}{{ sales_not_in_crm }} customers are not in CRM - consider adding them for
+                better engagement.{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

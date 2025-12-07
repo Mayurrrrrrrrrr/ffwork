@@ -1,0 +1,139 @@
+{% extends "base/base.html" %}
+
+{% block title %}Product Analysis Report{% endblock %}
+
+{% block navbar %}{% include "base/navbar.html" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i data-lucide="package" class="me-2"></i>Product Analysis</h2>
+        <a href="{% url 'analytics:reports_menu' %}" class="btn btn-outline-secondary">
+            <i data-lucide="arrow-left" class="me-1"></i> Reports
+        </a>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 bg-info text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Avg Discount %</h6>
+                    <h3>{{ avg_discount|floatformat:1 }}%</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 bg-danger text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Total Discounts Given</h6>
+                    <h3>₹{{ total_discount|floatformat:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 bg-success text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Categories</h6>
+                    <h3>{{ category_data|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Category Chart -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Revenue by Category</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="categoryChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collection Table -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Top Collections</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Collection</th>
+                                <th class="text-end">Revenue</th>
+                                <th class="text-end">Items</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in collection_data %}
+                            <tr>
+                                <td>{{ c.collection }}</td>
+                                <td class="text-end">₹{{ c.revenue|floatformat:0 }}</td>
+                                <td class="text-end">{{ c.count }}</td>
+                            </tr>
+                            {% empty %}<tr>
+                                <td colspan="3" class="text-muted text-center">No data</td>
+                            </tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Products -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Top 20 Products by Revenue</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Style Code</th>
+                                    <th>Category</th>
+                                    <th>Collection</th>
+                                    <th class="text-end">Revenue</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Margin</th>
+                                    <th class="text-end">Avg Discount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for p in top_products %}
+                                <tr>
+                                    <td>{{ forloop.counter }}</td>
+                                    <td><code>{{ p.style_code }}</code></td>
+                                    <td>{{ p.product_category|default:"-" }}</td>
+                                    <td>{{ p.collection|default:"-" }}</td>
+                                    <td class="text-end">₹{{ p.revenue|floatformat:0 }}</td>
+                                    <td class="text-end">{{ p.qty }}</td>
+                                    <td class="text-end">₹{{ p.margin|floatformat:0 }}</td>
+                                    <td class="text-end">{{ p.avg_discount|floatformat:1 }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    new Chart(document.getElementById('categoryChart'), {
+        type: 'doughnut',
+        data: { labels: {{ category_labels| safe }}, datasets: [{ data: {{ category_values| safe }}, backgroundColor: ['#667eea', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6c757d', '#fd7e14', '#20c997'] }] },
+        options: { responsive: true }
+});
+</script>
+{% endblock %}

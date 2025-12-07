@@ -384,8 +384,7 @@ class SalesImportView(LoginRequiredMixin, DataAdminRequiredMixin, FormView):
         elif file_type == 'stock':
             return self.process_flexible_import(uploaded_file, 'stock')
         elif file_type == 'crm':
-            messages.info(self.request, "CRM import is not yet implemented. Coming soon!")
-            return redirect('analytics:import')
+            return self.process_flexible_import(uploaded_file, 'crm')
         elif file_type == 'collection':
             return self.process_collection_csv(uploaded_file)
         
@@ -401,6 +400,8 @@ class SalesImportView(LoginRequiredMixin, DataAdminRequiredMixin, FormView):
         
         if import_type == 'sales':
             result = importer.import_sales(uploaded_file)
+        elif import_type == 'crm':
+            result = importer.import_crm(uploaded_file)
         else:
             result = importer.import_stock(uploaded_file)
         

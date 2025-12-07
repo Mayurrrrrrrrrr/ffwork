@@ -1,0 +1,166 @@
+{% extends "base/base.html" %}
+
+{% block title %}Customer Insights{% endblock %}
+
+{% block navbar %}{% include "base/navbar.html" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i data-lucide="users" class="me-2"></i>Customer Insights</h2>
+        <a href="{% url 'analytics:reports_menu' %}" class="btn btn-outline-secondary">
+            <i data-lucide="arrow-left" class="me-1"></i> Reports
+        </a>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Total Contacts</h6>
+                    <h3>{{ total_contacts|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-warning text-dark">
+                <div class="card-body">
+                    <h6 class="opacity-75">Loyalty Points Available</h6>
+                    <h3>{{ total_loyalty_points|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-success text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Points Redeemed</h6>
+                    <h3>{{ total_redeemed|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-info text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Lead Statuses</h6>
+                    <h3>{{ lead_status_data|length }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Lead Status Chart -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Lead Status Distribution</h5>
+                </div>
+                <div class="card-body"><canvas id="leadChart" height="250"></canvas></div>
+            </div>
+        </div>
+
+        <!-- Lead Source -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Top Lead Sources</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Source</th>
+                                <th class="text-end">Contacts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for l in lead_source_data %}<tr>
+                                <td>{{ l.lead_source }}</td>
+                                <td class="text-end">{{ l.count }}</td>
+                            </tr>{% empty %}<tr>
+                                <td colspan="2" class="text-muted text-center">No data</td>
+                            </tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Birthdays -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">🎂 Upcoming Birthdays (30 days)</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Mobile</th>
+                                <th>Birthday</th>
+                                <th class="text-end">In</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in upcoming_birthdays %}
+                            <tr>
+                                <td>{{ b.name }}</td>
+                                <td>{{ b.mobile }}</td>
+                                <td>{{ b.dob|date:"d M" }}</td>
+                                <td class="text-end"><span class="badge bg-primary">{{ b.days_until }} days</span></td>
+                            </tr>
+                            {% empty %}<tr>
+                                <td colspan="4" class="text-muted text-center">No upcoming birthdays</td>
+                            </tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Anniversaries -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">💍 Upcoming Anniversaries (30 days)</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Name</th>
+                                <th>Mobile</th>
+                                <th>Anniversary</th>
+                                <th class="text-end">In</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in upcoming_anniversaries %}
+                            <tr>
+                                <td>{{ a.name }}</td>
+                                <td>{{ a.mobile }}</td>
+                                <td>{{ a.anniversary|date:"d M" }}</td>
+                                <td class="text-end"><span class="badge bg-success">{{ a.days_until }} days</span></td>
+                            </tr>
+                            {% empty %}<tr>
+                                <td colspan="4" class="text-muted text-center">No upcoming anniversaries</td>
+                            </tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    new Chart(document.getElementById('leadChart'), {
+        type: 'pie',
+        data: { labels: {{ lead_labels| safe |default: "[]" }}, datasets: [{ data: {{ lead_values| safe |default: "[]" }}, backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#dc3545', '#6c757d', '#007bff', '#fd7e14'] }] },
+        options: { responsive: true }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,142 @@
+{% extends "base/base.html" %}
+
+{% block title %}Stock Summary{% endblock %}
+
+{% block navbar %}{% include "base/navbar.html" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-0"><i data-lucide="box" class="me-2"></i>Stock Summary</h2>
+            <small class="text-muted">As on: {{ snapshot_date|default:"N/A" }}</small>
+        </div>
+        <a href="{% url 'analytics:reports_menu' %}" class="btn btn-outline-secondary">
+            <i data-lucide="arrow-left" class="me-1"></i> Reports
+        </a>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Total SKUs</h6>
+                    <h3>{{ total_skus|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-success text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Total Quantity</h6>
+                    <h3>{{ total_qty|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-info text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Total Value</h6>
+                    <h3>₹{{ total_value|floatformat:0|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-warning text-dark">
+                <div class="card-body">
+                    <h6 class="opacity-75">Total Weight (g)</h6>
+                    <h3>{{ total_weight|floatformat:1|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- By Location -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Stock by Location</h5>
+                </div>
+                <div class="card-body"><canvas id="locationChart" height="250"></canvas></div>
+            </div>
+        </div>
+
+        <!-- By Category Table -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Stock by Category</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Category</th>
+                                <th class="text-end">Qty</th>
+                                <th class="text-end">Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in category_data %}<tr>
+                                <td>{{ c.category|default:"Unknown" }}</td>
+                                <td class="text-end">{{ c.qty }}</td>
+                                <td class="text-end">₹{{ c.value|floatformat:0 }}</td>
+                            </tr>{% empty %}<tr>
+                                <td colspan="3" class="text-muted text-center">No data</td>
+                            </tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Low Stock Items -->
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">⚠️ Low Stock Items (Qty ≤ 1)</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Style Code</th>
+                                    <th>Location</th>
+                                    <th>Category</th>
+                                    <th class="text-end">Qty</th>
+                                    <th class="text-end">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in low_stock_items %}
+                                <tr>
+                                    <td><code>{{ item.style_code }}</code></td>
+                                    <td>{{ item.location }}</td>
+                                    <td>{{ item.category|default:"-" }}</td>
+                                    <td class="text-end"><span class="badge bg-danger">{{ item.quantity }}</span></td>
+                                    <td class="text-end">₹{{ item.sale_price|floatformat:0 }}</td>
+                                </tr>
+                                {% empty %}<tr>
+                                    <td colspan="5" class="text-muted text-center">No low stock items</td>
+                                </tr>{% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    new Chart(document.getElementById('locationChart'), {
+        type: 'bar',
+        data: { labels: {{ location_labels| safe |default: "[]" }}, datasets: [{ label: 'Value', data: {{ location_values| safe |default: "[]" }}, backgroundColor: 'rgba(102,126,234,0.8)' }] },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+});
+</script>
+{% endblock %}

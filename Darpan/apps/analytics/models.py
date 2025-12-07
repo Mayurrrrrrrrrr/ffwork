@@ -184,6 +184,7 @@ class GoldRate(models.Model):
         return f"{self.company.name}: {self.rate_per_gram}"
 
 
+
 class CollectionMaster(models.Model):
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='collections')
     style_code = models.CharField(max_length=100, db_index=True)
@@ -200,3 +201,80 @@ class CollectionMaster(models.Model):
 
     def __str__(self):
         return f"{self.style_code} - {self.collection_name}"
+
+
+class CRMContact(models.Model):
+    """CRM Contact data for customer insights and combined analytics."""
+    
+    LEAD_STATUS_CHOICES = [
+        ('new', 'New'),
+        ('contacted', 'Contacted'),
+        ('qualified', 'Qualified'),
+        ('converted', 'Converted'),
+        ('not_interested', 'Not Interested'),
+        ('junk', 'Junk'),
+    ]
+    
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='crm_contacts')
+    
+    # Identity
+    record_id = models.CharField(max_length=100, blank=True, db_index=True)
+    full_name = models.CharField(max_length=255, blank=True)
+    first_name = models.CharField(max_length=100, blank=True)
+    last_name = models.CharField(max_length=100, blank=True)
+    
+    # Contact Info
+    mobile = models.CharField(max_length=20, blank=True, db_index=True)
+    phone = models.CharField(max_length=20, blank=True)
+    email = models.EmailField(blank=True)
+    
+    # Important Dates
+    dob = models.DateField(null=True, blank=True)
+    anniversary = models.DateField(null=True, blank=True)
+    
+    # Location / Store
+    store_name = models.CharField(max_length=255, blank=True)  # Contact Owner
+    location = models.CharField(max_length=255, blank=True)
+    city = models.CharField(max_length=100, blank=True)
+    state = models.CharField(max_length=100, blank=True)
+    
+    # Lead / Marketing
+    lead_source = models.CharField(max_length=100, blank=True)
+    lead_status = models.CharField(max_length=50, blank=True)
+    original_lead_source = models.CharField(max_length=100, blank=True)
+    
+    # Customer Profile
+    gender = models.CharField(max_length=20, blank=True)
+    marital_status = models.CharField(max_length=50, blank=True)
+    budget_range = models.CharField(max_length=100, blank=True)
+    interest_category = models.CharField(max_length=255, blank=True)
+    
+    # Engagement
+    loyalty_points = models.IntegerField(default=0)
+    loyalty_redeemed = models.IntegerField(default=0)
+    loyalty_earned = models.IntegerField(default=0)
+    last_engagement_date = models.DateField(null=True, blank=True)
+    total_signal_score = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    # Sales Attribution
+    sales_person = models.CharField(max_length=100, blank=True)
+    original_sales_person = models.CharField(max_length=100, blank=True)
+    
+    # Timestamps
+    created_time = models.DateTimeField(null=True, blank=True)
+    modified_time = models.DateTimeField(null=True, blank=True)
+    imported_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-imported_at']
+        indexes = [
+            models.Index(fields=['company', 'mobile']),
+            models.Index(fields=['company', 'store_name']),
+            models.Index(fields=['company', 'lead_status']),
+            models.Index(fields=['company', 'dob']),
+        ]
+        verbose_name = "CRM Contact"
+    
+    def __str__(self):
+        return f"{self.full_name} ({self.mobile})"
+

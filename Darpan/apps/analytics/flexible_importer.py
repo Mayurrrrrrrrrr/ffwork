@@ -10,7 +10,7 @@ from decimal import Decimal, InvalidOperation
 from django.db import transaction
 from django.utils import timezone
 
-from apps.analytics.models import SalesRecord, StockSnapshot, ImportLog
+from apps.analytics.models import SalesRecord, StockSnapshot, ImportLog, CRMContact
 
 logger = logging.getLogger(__name__)
 
@@ -431,3 +431,141 @@ class FlexibleImporter:
         except Exception as e:
             logger.error(f"Stock import failed: {e}")
             return {'success': False, 'error': str(e)}
+    
+    # CRM CSV column mapping
+    CRM_COLUMN_MAP = {
+        'Record Id': 'record_id',
+        'Contact Owner': 'store_name',
+        'First Name': 'first_name',
+        'Last Name': 'last_name',
+        'Contact Name': 'full_name',
+        'Mobile': 'mobile',
+        'Phone': 'phone',
+        'Email': 'email',
+        'Date of Birth': 'dob',
+        'Anniversary Date': 'anniversary',
+        'Lead Source': 'lead_source',
+        'Lead Status': 'lead_status',
+        'Original Lead Source': 'original_lead_source',
+        'Gender': 'gender',
+        'Marital Status': 'marital_status',
+        'Budget Range': 'budget_range',
+        'Product Category of Interest': 'interest_category',
+        'Loyalty Points Available': 'loyalty_points',
+        'Loyalty Points Redeemed': 'loyalty_redeemed',
+        'Loyalty Points Earned': 'loyalty_earned',
+        'Last Engagement Date_overall': 'last_engagement_date',
+        'Total Signal Scores': 'total_signal_score',
+        'Sales Person': 'sales_person',
+        'Original Sales Person': 'original_sales_person',
+        'Location': 'location',
+        'Mailing City': 'city',
+        'Mailing State': 'state',
+        'Created Time': 'created_time',
+        'Modified Time': 'modified_time',
+    }
+    
+    def import_crm(self, file):
+        """Import CRM contact data from CSV/Excel"""
+        try:
+            self._validate_company()
+            
+            if file.name.endswith('.csv'):
+                df = pd.read_csv(file)
+            else:
+                df = pd.read_excel(file)
+            
+            if df.empty:
+                return {'success': False, 'error': 'File is empty'}
+            
+            rename_map, mapped, unmapped = self._map_columns(df, self.CRM_COLUMN_MAP)
+            df = df.rename(columns=rename_map)
+            
+            rows_imported = 0
+            rows_skipped = 0
+            
+            records_to_create = []
+            
+            for idx, row in df.iterrows():
+                try:
+                    # Build full name if not present
+                    full_name = str(row.get('full_name', ''))
+                    if not full_name or full_name == 'nan':
+                        first = str(row.get('first_name', '')).strip()
+                        last = str(row.get('last_name', '')).strip()
+                        full_name = f"{first} {last}".strip()
+                    
+                    mobile = str(row.get('mobile', ''))[:20]
+                    if not mobile or mobile == 'nan':
+                        mobile = ''
+                    
+                    record = CRMContact(
+                        company=self.company,
+                        record_id=str(row.get('record_id', ''))[:100],
+                        full_name=full_name[:255],
+                        first_name=str(row.get('first_name', ''))[:100],
+                        last_name=str(row.get('last_name', ''))[:100],
+                        mobile=mobile,
+                        phone=str(row.get('phone', ''))[:20] if row.get('phone') else '',
+                        email=str(row.get('email', ''))[:254] if row.get('email') else '',
+                        dob=self._parse_date(row.get('dob')),
+                        anniversary=self._parse_date(row.get('anniversary')),
+                        store_name=str(row.get('store_name', ''))[:255],
+                        location=str(row.get('location', ''))[:255],
+                        city=str(row.get('city', ''))[:100],
+                        state=str(row.get('state', ''))[:100],
+                        lead_source=str(row.get('lead_source', ''))[:100],
+                        lead_status=str(row.get('lead_status', ''))[:50],
+                        original_lead_source=str(row.get('original_lead_source', ''))[:100],
+                        gender=str(row.get('gender', ''))[:20],
+                        marital_status=str(row.get('marital_status', ''))[:50],
+                        budget_range=str(row.get('budget_range', ''))[:100],
+                        interest_category=str(row.get('interest_category', ''))[:255],
+                        loyalty_points=self._parse_int(row.get('loyalty_points', 0)),
+                        loyalty_redeemed=self._parse_int(row.get('loyalty_redeemed', 0)),
+                        loyalty_earned=self._parse_int(row.get('loyalty_earned', 0)),
+                        last_engagement_date=self._parse_date(row.get('last_engagement_date')),
+                        total_signal_score=self._parse_decimal(row.get('total_signal_score', 0)),
+                        sales_person=str(row.get('sales_person', ''))[:100],
+                        original_sales_person=str(row.get('original_sales_person', ''))[:100],
+                    )
+                    records_to_create.append(record)
+                    rows_imported += 1
+                    
+                except Exception as e:
+                    self.warnings.append(f"Row {idx + 2}: {str(e)}")
+                    rows_skipped += 1
+            
+            if records_to_create:
+                try:
+                    with transaction.atomic():
+                        CRMContact.objects.bulk_create(records_to_create, batch_size=500)
+                except Exception as e:
+                    logger.error(f"CRM bulk create failed: {e}")
+                    return {'success': False, 'error': f'Database error: {str(e)}'}
+            
+            ImportLog.objects.create(
+                company=self.company,
+                file_type='crm',
+                file_name=file.name,
+                rows_imported=rows_imported,
+                rows_skipped=rows_skipped,
+                columns_mapped=mapped,
+                columns_unmapped=unmapped,
+                errors=self.warnings[:50],
+                imported_by=self.user,
+            )
+            
+            return {
+                'success': True,
+                'rows_imported': rows_imported,
+                'rows_skipped': rows_skipped,
+                'columns_mapped': mapped,
+                'columns_unmapped': unmapped,
+                'warnings': self.warnings[:20],
+            }
+            
+        except Exception as e:
+            logger.error(f"CRM import failed: {e}")
+            return {'success': False, 'error': str(e)}
+
