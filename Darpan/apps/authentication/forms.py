@@ -140,6 +140,10 @@ class PasswordResetConfirmForm(forms.Form):
         return cleaned_data
 
 
+# Alias for use in password reset
+SetPasswordForm = PasswordResetConfirmForm
+
+
 class ChangePasswordForm(forms.Form):
     """Form for changing password when logged in."""
     current_password = forms.CharField(

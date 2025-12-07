@@ -32,6 +32,7 @@ urlpatterns = [
     path('users/create/', views.UserCreateView.as_view(), name='user_create'),
     path('users/<int:pk>/update/', views.UserUpdateView.as_view(), name='user_update'),
     path('users/<int:pk>/modules/', views.UserModuleView.as_view(), name='user_modules'),
+    path('users/<int:pk>/send-credentials/', views.SendCredentialsView.as_view(), name='send_credentials'),
     
     # Company Admin: Store Management
     path('stores/', views.StoreListView.as_view(), name='store_list'),

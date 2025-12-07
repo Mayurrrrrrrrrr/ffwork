@@ -693,3 +693,35 @@ class DataPurgeView(LoginRequiredMixin, CompanyAdminRequiredMixin, TemplateView)
         for module_code in modules:
             self._purge_module(company, module_code)
 
+
+class SendCredentialsView(LoginRequiredMixin, CompanyAdminRequiredMixin, TemplateView):
+    """Company admin: Send login credentials to a user via email."""
+    template_name = 'admin_portal/send_credentials.html'
+    
+    def get_user_obj(self):
+        user = get_object_or_404(User, pk=self.kwargs['pk'])
+        # Ensure user belongs to the same company
+        if user.company != self.request.user.company:
+            raise Http404("User not found")
+        return user
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['user_obj'] = self.get_user_obj()
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        user_obj = self.get_user_obj()
+        
+        # Send credentials email with password reset link
+        from apps.core.email_service import EmailService
+        success = EmailService.send_credentials_email(user_obj, password=None, reset_link=True)
+        
+        if success:
+            messages.success(request, f"Credentials email sent to {user_obj.email}!")
+        else:
+            messages.error(request, "Failed to send email. Please check email configuration.")
+        
+        return redirect('admin_portal:user_list')
+
+

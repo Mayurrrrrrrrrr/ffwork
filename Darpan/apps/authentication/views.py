@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from apps.core.utils import log_audit_action
-from .forms import LoginForm, ChangePasswordForm
+from .forms import LoginForm, ChangePasswordForm, PasswordResetRequestForm
 
 
 @require_http_methods(["GET", "POST"])
@@ -110,8 +110,40 @@ def change_password_view(request):
     return render(request, 'authentication/change_password.html', context)
 
 
-# TODO: Implement password reset views (forgot password, reset confirmation)
-# These would require email functionality which we can add later
+@require_http_methods(["GET", "POST"])
+def password_reset_request_view(request):
+    """Handle password reset request - sends email with reset link."""
+    if request.user.is_authenticated:
+        return redirect('dashboard:home')
+    
+    if request.method == 'POST':
+        form = PasswordResetRequestForm(request.POST)
+        if form.is_valid():
+            email = form.cleaned_data['email']
+            from apps.core.models import User
+            
+            try:
+                user = User.objects.get(email=email)
+                # Send password reset email
+                from apps.core.email_service import EmailService
+                EmailService.send_password_reset_email(user)
+                messages.success(request, "If an account exists with this email, you will receive a password reset link.")
+            except User.DoesNotExist:
+                # Don't reveal if email exists
+                messages.success(request, "If an account exists with this email, you will receive a password reset link.")
+            
+            return redirect('authentication:login')
+    else:
+        form = PasswordResetRequestForm()
+    
+    context = {
+        'form': form,
+        'page_title': 'Reset Password'
+    }
+    return render(request, 'authentication/password_reset_request.html', context)
 
-from .utils import verify_email_view
+
+# Import views from utils
+from .utils import verify_email_view, password_reset_confirm_view
+
 

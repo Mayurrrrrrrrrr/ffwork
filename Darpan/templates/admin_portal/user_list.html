@@ -51,8 +51,12 @@
                                 {% endif %}
                             </td>
                             <td class="text-end pe-4">
+                                <a href="{% url 'admin_portal:send_credentials' user.pk %}"
+                                    class="btn btn-sm btn-outline-info me-1" title="Send Credentials">
+                                    <i data-lucide="mail" style="width: 16px;"></i>
+                                </a>
                                 <a href="{% url 'admin_portal:user_modules' user.pk %}"
-                                    class="btn btn-sm btn-outline-info me-1" title="Manage Modules">
+                                    class="btn btn-sm btn-outline-secondary me-1" title="Manage Modules">
                                     <i data-lucide="grid" style="width: 16px;"></i>
                                 </a>
                                 <a href="{% url 'admin_portal:user_update' user.pk %}"

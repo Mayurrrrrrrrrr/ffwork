@@ -1,41 +1,64 @@
+"""
+Authentication utilities including email verification and password reset.
+"""
 
-import uuid
-from django.core.mail import send_mail
-from django.conf import settings
-from django.urls import reverse
+from django.shortcuts import redirect
+from django.contrib import messages
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
+from django.utils.encoding import force_str
+from apps.core.models import User
 
-def send_verification_email(request, user):
-    """
-    Send verification email to the user.
-    """
-    token = str(uuid.uuid4())
-    user.verification_token = token
-    user.save()
-    
-    verify_url = request.build_absolute_uri(
-        reverse('authentication:verify_email', args=[token])
-    )
-    
-    subject = "Verify your email address - Darpan"
-    message = f"Hi {user.full_name},\n\nPlease click the link below to verify your email address:\n{verify_url}\n\nIf you did not request this, please ignore this email."
-    
-    # In production, use send_mail. For now, print to console.
-    print(f"--- EMAIL TO {user.email} ---\n{message}\n-----------------------------")
-    
-    # send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
 
-def verify_email_view(request, token):
+def verify_email_view(request, uidb64, token):
     """
-    Verify user's email address using the token.
+    Verify user's email address using the secure token.
     """
-    from apps.core.models import User
     try:
-        user = User.objects.get(verification_token=token)
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    
+    if user is not None and default_token_generator.check_token(user, token):
         user.is_email_verified = True
-        user.verification_token = None # Invalidate token
         user.save()
         messages.success(request, "Email verified successfully! You can now login.")
-    except User.DoesNotExist:
+    else:
         messages.error(request, "Invalid or expired verification link.")
-        
+    
     return redirect('authentication:login')
+
+
+def password_reset_confirm_view(request, uidb64, token):
+    """
+    Handle password reset confirmation with token validation.
+    """
+    from django.shortcuts import render
+    from .forms import SetPasswordForm
+    
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    
+    valid_link = user is not None and default_token_generator.check_token(user, token)
+    
+    if request.method == 'POST' and valid_link:
+        form = SetPasswordForm(request.POST)
+        if form.is_valid():
+            user.set_password(form.cleaned_data['new_password'])
+            user.is_email_verified = True  # Also verify email if resetting password
+            user.save()
+            messages.success(request, "Password set successfully! You can now login.")
+            return redirect('authentication:login')
+    else:
+        form = SetPasswordForm()
+    
+    context = {
+        'form': form,
+        'valid_link': valid_link,
+        'page_title': 'Set New Password'
+    }
+    return render(request, 'authentication/password_reset_confirm.html', context)

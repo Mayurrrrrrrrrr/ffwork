@@ -303,3 +303,17 @@ CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 GROQ_API_KEY = config('GROQ_API_KEY', default='')
 GROQ_MODEL = config('GROQ_MODEL', default='llama-3.1-70b-versatile')
 GROQ_MAX_TOKENS = config('GROQ_MAX_TOKENS', default=2048, cast=int)
+
+
+# ============================================
+# EMAIL CONFIGURATION
+# ============================================
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Darpan Portal <mayurdubey2003@gmail.com>')
+EMAIL_SUBJECT_PREFIX = '[Darpan] '
+
