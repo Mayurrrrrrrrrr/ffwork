@@ -67,7 +67,7 @@ def seed_modules(apps, schema_editor):
             'name': 'Stock',
             'description': 'Inventory and stock management',
             'icon': 'package',
-            'url_name': 'stock:inventory',
+            'url_name': 'stock:transfer_list',
             'color_class': 'primary',
             'order': 7,
         },
