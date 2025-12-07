@@ -3,9 +3,14 @@ Forms for Admin Portal module.
 """
 
 from django import forms
-from apps.core.models import User, Store, Company, Module, CompanyModule, UserModule
+from apps.core.models import User, Store, Company, Module, CompanyModule, UserModule, Role
+
 
 class UserForm(forms.ModelForm):
+    """
+    Form for creating/editing users.
+    Company admins can only assign roles they're allowed to (excluding platform_admin).
+    """
     password = forms.CharField(widget=forms.PasswordInput(), required=False, help_text="Leave blank to keep current password")
     
     class Meta:
@@ -16,6 +21,24 @@ class UserForm(forms.ModelForm):
             'doj': forms.DateInput(attrs={'type': 'date'}),
             'roles': forms.CheckboxSelectMultiple(),
         }
+    
+    def __init__(self, *args, requesting_user=None, company=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.requesting_user = requesting_user
+        self.company = company
+        
+        # Filter roles - company admins cannot assign platform_admin
+        if requesting_user and not requesting_user.is_platform_admin:
+            # Company admins can only assign non-platform roles
+            self.fields['roles'].queryset = Role.objects.exclude(name='platform_admin').order_by('name')
+        else:
+            self.fields['roles'].queryset = Role.objects.all().order_by('name')
+        
+        # Filter stores to only show company's stores
+        if company:
+            self.fields['store'].queryset = Store.objects.filter(company=company, is_active=True)
+        elif requesting_user and requesting_user.company:
+            self.fields['store'].queryset = Store.objects.filter(company=requesting_user.company, is_active=True)
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -26,6 +49,7 @@ class UserForm(forms.ModelForm):
             user.save()
             self.save_m2m()
         return user
+
 
 class StoreForm(forms.ModelForm):
     class Meta:

@@ -128,12 +128,11 @@ class UserCreateView(LoginRequiredMixin, CompanyAdminRequiredMixin, CreateView):
     template_name = 'admin_portal/user_form.html'
     success_url = reverse_lazy('admin_portal:user_list')
 
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-        # Filter stores to only show company stores
-        if self.request.user.company:
-            form.fields['store'].queryset = Store.objects.filter(company=self.request.user.company)
-        return form
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['requesting_user'] = self.request.user
+        kwargs['company'] = self.request.user.company
+        return kwargs
 
     def form_valid(self, form):
         form.instance.company = self.request.user.company
@@ -151,12 +150,11 @@ class UserUpdateView(LoginRequiredMixin, CompanyAdminRequiredMixin, UpdateView):
     def get_queryset(self):
         return User.objects.filter(company=self.request.user.company)
 
-    def get_form(self, form_class=None):
-        form = super().get_form(form_class)
-        # Filter stores to only show company stores
-        if self.request.user.company:
-            form.fields['store'].queryset = Store.objects.filter(company=self.request.user.company)
-        return form
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['requesting_user'] = self.request.user
+        kwargs['company'] = self.request.user.company
+        return kwargs
 
     def form_valid(self, form):
         messages.success(self.request, "User updated successfully!")
