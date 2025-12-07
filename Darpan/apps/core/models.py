@@ -171,6 +171,16 @@ class User(AbstractUser):
         for role in role_names:
             q_obj |= models.Q(name__iexact=role)
         return self.roles.filter(q_obj).exists()
+    
+    @property
+    def is_platform_admin(self):
+        """Check if user is platform admin (superuser without company)."""
+        return self.is_superuser and self.company is None
+    
+    @property
+    def is_company_admin(self):
+        """Check if user is a company admin."""
+        return self.has_role('admin') and self.company is not None
 
 
 class Announcement(models.Model):

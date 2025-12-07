@@ -9,13 +9,13 @@
 {% block content %}
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Admin Portal</h2>
         <div>
-            {% if user.is_superuser %}
-            <a href="{% url 'admin_portal:company_list' %}" class="btn btn-outline-dark me-2">
-                <i data-lucide="building" class="me-1"></i> Manage Companies
-            </a>
+            <h2>Company Admin Portal</h2>
+            {% if user.company %}
+            <p class="text-muted mb-0">Managing: {{ user.company.name }}</p>
             {% endif %}
+        </div>
+        <div>
             <a href="{% url 'admin_portal:user_list' %}" class="btn btn-outline-primary me-2">
                 <i data-lucide="users" class="me-1"></i> Manage Users
             </a>
@@ -45,10 +45,10 @@
             </div>
         </div>
         <div class="col-md-4">
-            <div class="card shadow-sm border-start border-4 border-secondary h-100">
+            <div class="card shadow-sm border-start border-4 border-success h-100">
                 <div class="card-body">
-                    <h6 class="text-muted text-uppercase small">System Logs</h6>
-                    <h3 class="mb-0">View All</h3>
+                    <h6 class="text-muted text-uppercase small">Your Role</h6>
+                    <span class="badge bg-success fs-6">Company Admin</span>
                 </div>
             </div>
         </div>
@@ -76,9 +76,9 @@
                         <td class="ps-4 text-muted small">{{ log.timestamp|date:"M j, H:i" }}</td>
                         <td>{{ log.user.get_short_name }}</td>
                         <td>
-                            <span class="badge bg-light text-dark border">{{ log.action }}</span>
+                            <span class="badge bg-light text-dark border">{{ log.action_type }}</span>
                         </td>
-                        <td>{{ log.details|truncatechars:50 }}</td>
+                        <td>{{ log.log_message|truncatechars:50 }}</td>
                         <td class="text-end pe-4 text-muted small">{{ log.ip_address }}</td>
                     </tr>
                     {% empty %}

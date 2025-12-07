@@ -41,3 +41,31 @@ class CompanyForm(forms.ModelForm):
         model = Company
         fields = ['name', 'company_code', 'is_active']
 
+
+class CompanyAdminForm(forms.ModelForm):
+    """Form for platform admin to create a company admin."""
+    password = forms.CharField(widget=forms.PasswordInput(), required=True, help_text="Set the initial password")
+    
+    class Meta:
+        model = User
+        fields = ['email', 'full_name', 'phone', 'password']
+    
+    def __init__(self, *args, company=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.company = company
+    
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.company = self.company
+        user.set_password(self.cleaned_data['password'])
+        user.is_active = True
+        if commit:
+            user.save()
+            # Assign admin role
+            from apps.core.models import Role
+            admin_role, _ = Role.objects.get_or_create(
+                name='admin', 
+                defaults={'description': 'Company Administrator'}
+            )
+            user.roles.add(admin_role)
+        return user

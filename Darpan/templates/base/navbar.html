@@ -8,6 +8,8 @@
         {% if user.is_authenticated %}
         <!-- Navigation Links - Always Visible -->
         <ul class="navbar-nav flex-row flex-wrap align-items-center gap-1" style="flex: 1;">
+            {% if not user.is_platform_admin %}
+            <!-- Company-specific modules - hidden from platform admin -->
             <li class="nav-item">
                 <a class="nav-link px-2 py-1" href="{% url 'analytics:dashboard' %}" style="font-size: 0.85rem;">
                     <i data-lucide="bar-chart-2" style="width:14px;height:14px;" class="me-1"></i>Analytics
@@ -29,7 +31,7 @@
                 </a>
             </li>
 
-            <!-- More Dropdown -->
+            <!-- More Dropdown - Company modules -->
             <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle px-2 py-1" href="#" id="modulesDropdown" role="button"
                     data-bs-toggle="dropdown" style="font-size: 0.85rem;">
@@ -60,7 +62,7 @@
                     <li><a class="dropdown-item" href="{% url 'referrals:list' %}">
                             <i data-lucide="users" style="width:14px;height:14px;" class="me-2"></i>Referrals
                         </a></li>
-                    {% if request.user.is_superuser or 'admin' in request.user.get_role_names %}
+                    {% if user.is_company_admin %}
                     <li>
                         <hr class="dropdown-divider">
                     </li>
@@ -70,6 +72,21 @@
                     {% endif %}
                 </ul>
             </li>
+            {% else %}
+            <!-- Platform Admin: Limited navigation -->
+            <li class="nav-item">
+                <a class="nav-link px-2 py-1" href="{% url 'admin_portal:platform_dashboard' %}"
+                    style="font-size: 0.85rem;">
+                    <i data-lucide="building" style="width:14px;height:14px;" class="me-1"></i>Companies
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link px-2 py-1" href="{% url 'admin_portal:company_create' %}"
+                    style="font-size: 0.85rem;">
+                    <i data-lucide="plus" style="width:14px;height:14px;" class="me-1"></i>Add Company
+                </a>
+            </li>
+            {% endif %}
         </ul>
 
         <!-- User Dropdown - Right Side -->
