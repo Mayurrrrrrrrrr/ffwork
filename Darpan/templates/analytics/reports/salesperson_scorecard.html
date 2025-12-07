@@ -1,0 +1,144 @@
+{% extends "base/base.html" %}
+
+{% block title %}Salesperson Scorecard{% endblock %}
+
+{% block navbar %}{% include "base/navbar.html" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">👤 Salesperson Scorecard</h2>
+        <a href="{% url 'analytics:reports_menu' %}" class="btn btn-outline-secondary btn-sm">← Reports</a>
+    </div>
+
+    {% include "analytics/reports/_filters.html" %}
+
+    <!-- Summary -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Total Salespersons</h6>
+                    <h3>{{ total_salespersons|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 bg-success text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Combined Revenue</h6>
+                    <h3>₹{{ total_revenue|floatformat:0|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            {% if top_performer %}
+            <div class="card border-0 bg-warning text-dark">
+                <div class="card-body">
+                    <h6 class="opacity-75">🏆 Top Performer</h6>
+                    <h5 class="mb-0">{{ top_performer.name }}</h5>
+                    <small>₹{{ top_performer.revenue|floatformat:0 }}</small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Full Scorecard Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0">Performance Rankings</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Rank</th>
+                            <th>Salesperson</th>
+                            <th class="text-end">Revenue</th>
+                            <th class="text-end">Transactions</th>
+                            <th class="text-end">Items</th>
+                            <th class="text-end">Margin</th>
+                            <th class="text-end">Avg Value</th>
+                            <th class="text-end">Avg Discount</th>
+                            <th class="text-end">Contribution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in salesperson_stats %}
+                        <tr {% if s.rank <=3 %}class="table-success" {% endif %}>
+                            <td>
+                                {% if s.rank == 1 %}🥇{% elif s.rank == 2 %}🥈{% elif s.rank == 3 %}🥉{% else %}{{
+                                s.rank }}{% endif %}
+                            </td>
+                            <td><strong>{{ s.sales_person }}</strong></td>
+                            <td class="text-end">₹{{ s.revenue|floatformat:0|default:0 }}</td>
+                            <td class="text-end">{{ s.transactions }}</td>
+                            <td class="text-end">{{ s.items|default:0 }}</td>
+                            <td class="text-end">₹{{ s.margin|floatformat:0|default:0 }}</td>
+                            <td class="text-end">₹{{ s.avg_value|floatformat:0|default:0 }}</td>
+                            <td class="text-end">{{ s.avg_discount|floatformat:1|default:0 }}%</td>
+                            <td class="text-end">
+                                <div class="progress" style="width:80px; height:20px;">
+                                    <div class="progress-bar bg-primary" style="width:{{ s.contribution }}%">{{
+                                        s.contribution }}%</div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">No sales data</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if top_performer %}
+    <!-- Top Performer Details -->
+    <div class="row g-4 mt-3">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">🏆 {{ top_performer.name }}'s Top Categories</h6>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            {% for c in top_performer.top_categories %}
+                            <tr>
+                                <td>{{ c.product_category|default:"Unknown" }}</td>
+                                <td class="text-end">₹{{ c.rev|floatformat:0 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h6 class="mb-0">🏆 {{ top_performer.name }}'s Top Products</h6>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm mb-0">
+                        <tbody>
+                            {% for p in top_performer.top_products %}
+                            <tr>
+                                <td><code>{{ p.style_code }}</code></td>
+                                <td class="text-end">₹{{ p.rev|floatformat:0 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

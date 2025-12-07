@@ -1,0 +1,44 @@
+<!-- Report Filters Partial - Include in all report templates -->
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small">Date From</label>
+                <input type="date" name="date_from" class="form-control form-control-sm"
+                    value="{{ current_filters.date_from }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Date To</label>
+                <input type="date" name="date_to" class="form-control form-control-sm"
+                    value="{{ current_filters.date_to }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Category</label>
+                <select name="category" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for c in filters.categories %}<option value="{{ c }}" {% if current_filters.category==c
+                        %}selected{% endif %}>{{ c }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Location</label>
+                <select name="location" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for l in filters.locations %}<option value="{{ l }}" {% if current_filters.location==l
+                        %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small">Metal</label>
+                <select name="metal" class="form-select form-select-sm">
+                    <option value="">All</option>
+                    {% for m in filters.metals %}<option value="{{ m }}" {% if current_filters.metal==m %}selected{%
+                        endif %}>{{ m }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">Apply</button>
+            </div>
+        </form>
+    </div>
+</div>

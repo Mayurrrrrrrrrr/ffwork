@@ -8,12 +8,56 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-0"><i data-lucide="bar-chart-2" class="me-2"></i>Sell-Through Analysis</h2>
+            <h2 class="mb-0">📊 Sell-Through Analysis</h2>
             <small class="text-muted">Stock as on: {{ snapshot_date|default:"N/A" }}</small>
         </div>
-        <a href="{% url 'analytics:reports_menu' %}" class="btn btn-outline-secondary">
-            <i data-lucide="arrow-left" class="me-1"></i> Reports
-        </a>
+        <a href="{% url 'analytics:reports_menu' %}" class="btn btn-outline-secondary btn-sm">← Reports</a>
+    </div>
+
+    <!-- Filters with Stock Date -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label small">Sales Date From</label>
+                    <input type="date" name="date_from" class="form-control form-control-sm"
+                        value="{{ current_filters.date_from }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Sales Date To</label>
+                    <input type="date" name="date_to" class="form-control form-control-sm"
+                        value="{{ current_filters.date_to }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Stock Snapshot Date</label>
+                    <select name="stock_date" class="form-select form-select-sm">
+                        <option value="">Latest</option>
+                        {% for d in available_stock_dates %}<option value="{{ d|date:'Y-m-d' }}" {% if
+                            current_filters.stock_date==d|date:'Y-m-d' %}selected{% endif %}>{{ d|date:"d M Y" }}
+                        </option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Category</label>
+                    <select name="category" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        {% for c in filters.categories %}<option value="{{ c }}" {% if current_filters.category==c
+                            %}selected{% endif %}>{{ c }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Location</label>
+                    <select name="location" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        {% for l in filters.locations %}<option value="{{ l }}" {% if current_filters.location==l
+                            %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">Apply</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <!-- By Category -->

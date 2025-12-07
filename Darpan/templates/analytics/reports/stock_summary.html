@@ -8,14 +8,21 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="mb-0"><i data-lucide="box" class="me-2"></i>Stock Summary</h2>
+            <h2 class="mb-0">📦 Stock Summary</h2>
             <small class="text-muted">As on: {{ snapshot_date|default:"N/A" }}</small>
         </div>
-        <a href="{% url 'analytics:reports_menu' %}" class="btn btn-outline-secondary">
-            <i data-lucide="arrow-left" class="me-1"></i> Reports
-        </a>
+        <a href="{% url 'analytics:reports_menu' %}" class="btn btn-outline-secondary btn-sm">← Reports</a>
     </div>
 
+    {% include "analytics/reports/_filters.html" %}
+
+    {% if total_qty == 0 %}
+    <div class="alert alert-warning text-center py-5">
+        <h5>No Stock Data Found</h5>
+        <p class="text-muted">Import stock data to see summary.</p>
+        <a href="{% url 'analytics:import' %}" class="btn btn-primary">Import Stock Data</a>
+    </div>
+    {% else %}
     <!-- KPI Cards -->
     <div class="row g-3 mb-4">
         <div class="col-md-3">
@@ -129,14 +136,17 @@
             </div>
         </div>
     </div>
+    {% endif %}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    {% if total_qty > 0 %}
     new Chart(document.getElementById('locationChart'), {
         type: 'bar',
         data: { labels: {{ location_labels| safe |default: "[]" }}, datasets: [{ label: 'Value', data: {{ location_values| safe |default: "[]" }}, backgroundColor: 'rgba(102,126,234,0.8)' }] },
         options: { responsive: true, plugins: { legend: { display: false } } }
 });
+    {% endif %}
 </script>
 {% endblock %}

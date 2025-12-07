@@ -31,4 +31,7 @@ urlpatterns = [
     path('reports/customers/', reports.CustomerInsightsReport.as_view(), name='report_customers'),
     path('reports/stock/', reports.StockSummaryReport.as_view(), name='report_stock'),
     path('reports/combined/', reports.CombinedInsightsReport.as_view(), name='report_combined'),
+    path('reports/exhibition/', reports.ExhibitionReport.as_view(), name='report_exhibition'),
+    path('reports/salesperson/', reports.SalespersonScorecardReport.as_view(), name='report_salesperson'),
 ]
+

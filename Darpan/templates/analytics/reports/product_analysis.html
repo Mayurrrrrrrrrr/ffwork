@@ -7,11 +7,11 @@
 {% block content %}
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0"><i data-lucide="package" class="me-2"></i>Product Analysis</h2>
-        <a href="{% url 'analytics:reports_menu' %}" class="btn btn-outline-secondary">
-            <i data-lucide="arrow-left" class="me-1"></i> Reports
-        </a>
+        <h2 class="mb-0">📦 Product Analysis</h2>
+        <a href="{% url 'analytics:reports_menu' %}" class="btn btn-outline-secondary btn-sm">← Reports</a>
     </div>
+
+    {% include "analytics/reports/_filters.html" %}
 
     <!-- KPI Cards -->
     <div class="row g-3 mb-4">
@@ -19,7 +19,7 @@
             <div class="card border-0 bg-info text-white">
                 <div class="card-body">
                     <h6 class="opacity-75">Avg Discount %</h6>
-                    <h3>{{ avg_discount|floatformat:1 }}%</h3>
+                    <h3>{{ avg_discount|floatformat:1|default:0 }}%</h3>
                 </div>
             </div>
         </div>
@@ -27,7 +27,7 @@
             <div class="card border-0 bg-danger text-white">
                 <div class="card-body">
                     <h6 class="opacity-75">Total Discounts Given</h6>
-                    <h3>₹{{ total_discount|floatformat:0 }}</h3>
+                    <h3>₹{{ total_discount|floatformat:0|default:0 }}</h3>
                 </div>
             </div>
         </div>
@@ -118,6 +118,9 @@
                                     <td class="text-end">₹{{ p.margin|floatformat:0 }}</td>
                                     <td class="text-end">{{ p.avg_discount|floatformat:1 }}%</td>
                                 </tr>
+                                {% empty %}<tr>
+                                    <td colspan="8" class="text-center text-muted">No data</td>
+                                </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
@@ -132,7 +135,7 @@
 <script>
     new Chart(document.getElementById('categoryChart'), {
         type: 'doughnut',
-        data: { labels: {{ category_labels| safe }}, datasets: [{ data: {{ category_values| safe }}, backgroundColor: ['#667eea', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6c757d', '#fd7e14', '#20c997'] }] },
+        data: { labels: {{ category_labels| safe |default: "[]" }}, datasets: [{ data: {{ category_values| safe |default: "[]" }}, backgroundColor: ['#667eea', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6c757d', '#fd7e14', '#20c997'] }] },
         options: { responsive: true }
 });
 </script>

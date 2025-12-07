@@ -1,0 +1,157 @@
+{% extends "base/base.html" %}
+
+{% block title %}Exhibition Report{% endblock %}
+
+{% block navbar %}{% include "base/navbar.html" %}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">📅 Exhibition Report</h2>
+        <a href="{% url 'analytics:reports_menu' %}" class="btn btn-outline-secondary btn-sm">← Reports</a>
+    </div>
+
+    {% include "analytics/reports/_filters.html" %}
+
+    <!-- KPI Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 bg-primary text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Exhibition Revenue</h6>
+                    <h3>₹{{ exhibition_revenue|floatformat:0|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-success text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Exhibition Transactions</h6>
+                    <h3>{{ exhibition_transactions|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-info text-white">
+                <div class="card-body">
+                    <h6 class="opacity-75">Exhibition Margin</h6>
+                    <h3>₹{{ exhibition_margin|floatformat:0|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 bg-warning text-dark">
+                <div class="card-body">
+                    <h6 class="opacity-75">Items Sold</h6>
+                    <h3>{{ exhibition_items|default:0 }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparison -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Exhibition vs Regular Sales</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="comparisonChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Exhibition Daily Trend</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Top Exhibition Products -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Top Exhibition Products</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Style</th>
+                                <th>Category</th>
+                                <th class="text-end">Revenue</th>
+                                <th class="text-end">Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in top_exhibition_products %}
+                            <tr>
+                                <td><code>{{ p.style_code }}</code></td>
+                                <td>{{ p.product_category|default:"-" }}</td>
+                                <td class="text-end">₹{{ p.revenue|floatformat:0 }}</td>
+                                <td class="text-end">{{ p.qty }}</td>
+                            </tr>
+                            {% empty %}<tr>
+                                <td colspan="4" class="text-center text-muted">No exhibition sales</td>
+                            </tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- By Category -->
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Exhibition by Category</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Category</th>
+                                <th class="text-end">Revenue</th>
+                                <th class="text-end">Items</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in exhibition_by_category %}
+                            <tr>
+                                <td>{{ c.product_category|default:"Unknown" }}</td>
+                                <td class="text-end">₹{{ c.revenue|floatformat:0 }}</td>
+                                <td class="text-end">{{ c.items }}</td>
+                            </tr>
+                            {% empty %}<tr>
+                                <td colspan="3" class="text-center text-muted">No data</td>
+                            </tr>{% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    new Chart(document.getElementById('comparisonChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Exhibition', 'Regular'],
+            datasets: [{ data: [{{ exhibition_revenue|default: 0 }}, {{ regular_revenue|default: 0 }}], backgroundColor: ['#667eea', '#28a745'] }] 
+    }
+});
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: { labels: {{ trend_labels| safe |default: "[]" }}, datasets: [{ label: 'Revenue', data: {{ trend_values| safe |default: "[]" }}, borderColor: '#667eea', fill: true, backgroundColor: 'rgba(102,126,234,0.1)' }] }
+});
+</script>
+{% endblock %}
