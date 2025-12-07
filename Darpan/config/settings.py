@@ -295,3 +295,11 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+
+
+# ============================================
+# GROQ AI CONFIGURATION
+# ============================================
+GROQ_API_KEY = config('GROQ_API_KEY', default='')
+GROQ_MODEL = config('GROQ_MODEL', default='llama-3.1-70b-versatile')
+GROQ_MAX_TOKENS = config('GROQ_MAX_TOKENS', default=2048, cast=int)

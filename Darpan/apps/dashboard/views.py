@@ -4,11 +4,16 @@ Portal home with pending actions, celebrations, and announcements.
 """
 
 from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q, Sum, Max, F
 from datetime import date, timedelta
+import json
+import markdown
 from apps.core.models import User, Announcement
 from apps.core.utils import check_role, has_any_role
+
 
 
 @login_required
@@ -166,3 +171,33 @@ def portal_home(request):
     }
     
     return render(request, 'dashboard/portal_home.html', context)
+
+
+@login_required
+@require_POST
+def chat_with_ai(request):
+    """
+    AJAX endpoint for the AI Chatbot
+    """
+    try:
+        data = json.loads(request.body)
+        user_question = data.get('message', '')
+        
+        if not user_question:
+            return JsonResponse({'error': 'No message provided'}, status=400)
+
+        # Initialize Service
+        from .ai_service import AIAssistant
+        assistant = AIAssistant()
+        response_text = assistant.generate_response(user_question, request.user)
+        
+        # Convert Markdown to HTML for safe display
+        response_html = markdown.markdown(response_text)
+
+        return JsonResponse({
+            'response': response_html,
+            'status': 'success'
+        })
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

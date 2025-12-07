@@ -76,6 +76,123 @@
 
     {% block content %}{% endblock %}
 
+    <!-- AI Chat Widget -->
+    {% if user.is_authenticated %}
+    <div id="ai-widget" class="fixed bottom-6 right-6 z-50" x-data="{ open: false }">
+
+        <div x-show="open" x-transition:enter="transition ease-out duration-200"
+            x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0"
+            class="bg-white rounded-xl shadow-2xl w-80 md:w-96 mb-4 overflow-hidden border border-gray-200 flex flex-col"
+            style="height: 500px; display: none;">
+
+            <div class="bg-indigo-600 p-3 text-white flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="bot" class="w-5 h-5"></i>
+                    <span class="font-semibold">Darpan AI</span>
+                </div>
+                <button @click="open = false" class="text-white hover:text-gray-200">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-gray-50 space-y-3">
+                <div class="flex gap-2">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="bot" class="w-4 h-4 text-indigo-600"></i>
+                    </div>
+                    <div class="bg-white p-3 rounded-r-lg rounded-bl-lg shadow-sm text-sm text-gray-800 border">
+                        Hello {{ user.get_short_name }}! I have access to your tasks and sales data. How can I help?
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-white border-t">
+                <form id="chat-form" class="flex gap-2">
+                    <input type="text" id="user-input" class="form-control text-sm flex-1"
+                        placeholder="Ask about sales, tasks..." required>
+                    <button type="submit" class="btn btn-primary btn-sm px-3">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <button @click="open = !open"
+            class="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-110 flex items-center justify-center">
+            <i data-lucide="message-square" class="w-6 h-6"></i>
+        </button>
+    </div>
+
+    <script>
+        document.getElementById('chat-form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const input = document.getElementById('user-input');
+            const message = input.value;
+            const chatBox = document.getElementById('chat-messages');
+
+            if (!message) return;
+
+            // 1. Add User Message
+            chatBox.innerHTML += `
+            <div class="flex justify-end gap-2">
+                <div class="bg-indigo-600 text-white p-3 rounded-l-lg rounded-br-lg shadow-sm text-sm">
+                    ${message}
+                </div>
+            </div>`;
+
+            input.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // 2. Add Loading State
+            const loadingId = 'loading-' + Date.now();
+            chatBox.innerHTML += `
+            <div id="${loadingId}" class="flex gap-2">
+                <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                    <i data-lucide="bot" class="w-4 h-4 text-indigo-600"></i>
+                </div>
+                <div class="bg-white p-3 rounded-r-lg rounded-bl-lg shadow-sm text-sm text-gray-500 border">
+                    Thinking...
+                </div>
+            </div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // 3. Call API
+            try {
+                const response = await fetch("{% url 'dashboard:ai_chat' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+
+                // Remove loading
+                document.getElementById(loadingId).remove();
+
+                // Add Bot Response
+                chatBox.innerHTML += `
+                <div class="flex gap-2">
+                    <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="bot" class="w-4 h-4 text-indigo-600"></i>
+                    </div>
+                    <div class="bg-white p-3 rounded-r-lg rounded-bl-lg shadow-sm text-sm text-gray-800 border prose prose-sm">
+                        ${data.response || data.error || 'No response'}
+                    </div>
+                </div>`;
+
+            } catch (error) {
+                document.getElementById(loadingId).querySelector('div:last-child').innerText = "Error: Could not reach AI.";
+            }
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+            lucide.createIcons(); // Re-render icons
+        });
+    </script>
+    {% endif %}
+
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
