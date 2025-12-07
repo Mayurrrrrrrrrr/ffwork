@@ -164,7 +164,13 @@ class AdvancedAnalyticsView(LoginRequiredMixin, DashboardAccessMixin, TemplateVi
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         company = self.request.user.company
-        qs = SalesRecord.objects.filter(company=company)
+        
+        # Handle platform admin without company
+        if not company:
+            from apps.core.models import Company
+            company = Company.objects.first()
+        
+        qs = SalesRecord.objects.filter(company=company) if company else SalesRecord.objects.none()
 
         kpi_data = qs.aggregate(
             total_revenue=Sum('revenue'),
@@ -175,20 +181,20 @@ class AdvancedAnalyticsView(LoginRequiredMixin, DashboardAccessMixin, TemplateVi
         context.update(kpi_data)
 
         category_data = qs.values('product_category').annotate(total=Sum('revenue')).order_by('-total')
-        context['category_labels'] = [item['product_category'] for item in category_data]
-        context['category_values'] = [float(item['total']) for item in category_data]
+        context['category_labels'] = [item['product_category'] or 'Unknown' for item in category_data]
+        context['category_values'] = [float(item['total'] or 0) for item in category_data]
 
         metal_data = qs.values('base_metal').annotate(total=Sum('revenue')).order_by('-total')
-        context['metal_labels'] = [item['base_metal'] for item in metal_data]
-        context['metal_values'] = [float(item['total']) for item in metal_data]
+        context['metal_labels'] = [item['base_metal'] or 'Unknown' for item in metal_data]
+        context['metal_values'] = [float(item['total'] or 0) for item in metal_data]
 
         top_products = qs.values('product_name').annotate(total=Sum('revenue')).order_by('-total')[:10]
-        context['product_labels'] = [item['product_name'] for item in top_products]
-        context['product_values'] = [float(item['total']) for item in top_products]
+        context['product_labels'] = [item['product_name'] or 'Unknown' for item in top_products]
+        context['product_values'] = [float(item['total'] or 0) for item in top_products]
 
         monthly_data = qs.annotate(month=TruncMonth('transaction_date')).values('month').annotate(total=Sum('revenue')).order_by('month')
         context['trend_labels'] = [item['month'].strftime('%b %Y') for item in monthly_data if item['month']]
-        context['trend_values'] = [float(item['total']) for item in monthly_data if item['month']]
+        context['trend_values'] = [float(item['total'] or 0) for item in monthly_data if item['month'] and item['total']]
 
         context['recent_transactions'] = qs.order_by('-revenue')[:10]
 
