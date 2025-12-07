@@ -52,14 +52,14 @@ class SalesPerformanceReport(LoginRequiredMixin, ReportAccessMixin, TemplateView
         sales_qs = SalesRecord.objects.filter(company=company, transaction_type='sale') if company else SalesRecord.objects.none()
         
         # Overall KPIs
-        context['total_revenue'] = sales_qs.aggregate(total=Sum('final_amount'))['total'] or 0
+        context['total_revenue'] = sales_qs.aggregate(total=Sum('revenue'))['total'] or 0
         context['total_transactions'] = sales_qs.count()
         context['avg_order_value'] = context['total_revenue'] / max(context['total_transactions'], 1)
         context['total_margin'] = sales_qs.aggregate(total=Sum('gross_margin'))['total'] or 0
         
         # By Store/Location
         store_data = sales_qs.values('region').annotate(
-            revenue=Sum('final_amount'),
+            revenue=Sum('revenue'),
             count=Count('id'),
             margin=Sum('gross_margin')
         ).order_by('-revenue')[:15]
@@ -69,7 +69,7 @@ class SalesPerformanceReport(LoginRequiredMixin, ReportAccessMixin, TemplateView
         
         # By Salesperson
         sales_person_data = sales_qs.exclude(sales_person='').values('sales_person').annotate(
-            revenue=Sum('final_amount'),
+            revenue=Sum('revenue'),
             count=Count('id'),
             avg_value=Avg('final_amount')
         ).order_by('-revenue')[:15]
@@ -78,7 +78,7 @@ class SalesPerformanceReport(LoginRequiredMixin, ReportAccessMixin, TemplateView
         # Monthly Trend
         thirty_days_ago = timezone.now().date() - timedelta(days=90)
         monthly_data = sales_qs.filter(transaction_date__gte=thirty_days_ago).values('transaction_date').annotate(
-            total=Sum('final_amount')
+            total=Sum('revenue')
         ).order_by('transaction_date')
         
         daily_totals = defaultdict(float)
@@ -109,7 +109,7 @@ class ProductAnalysisReport(LoginRequiredMixin, ReportAccessMixin, TemplateView)
         
         # Top 20 products by revenue
         top_products = sales_qs.values('style_code', 'product_category', 'collection').annotate(
-            revenue=Sum('final_amount'),
+            revenue=Sum('revenue'),
             qty=Sum('quantity'),
             margin=Sum('gross_margin'),
             avg_discount=Avg('discount_percentage')
@@ -118,7 +118,7 @@ class ProductAnalysisReport(LoginRequiredMixin, ReportAccessMixin, TemplateView)
         
         # Category performance
         category_data = sales_qs.values('product_category').annotate(
-            revenue=Sum('final_amount'),
+            revenue=Sum('revenue'),
             count=Count('id'),
             margin=Sum('gross_margin')
         ).order_by('-revenue')[:10]
@@ -128,7 +128,7 @@ class ProductAnalysisReport(LoginRequiredMixin, ReportAccessMixin, TemplateView)
         
         # Collection performance
         collection_data = sales_qs.exclude(collection='').values('collection').annotate(
-            revenue=Sum('final_amount'),
+            revenue=Sum('revenue'),
             count=Count('id')
         ).order_by('-revenue')[:10]
         context['collection_data'] = list(collection_data)
@@ -171,7 +171,7 @@ class SellThroughReport(LoginRequiredMixin, ReportAccessMixin, TemplateView):
         
         style_sales = sales_qs.values('style_code').annotate(
             sold_qty=Sum('quantity'),
-            sold_value=Sum('final_amount')
+            sold_value=Sum('revenue')
         )
         
         sellthrough_data = []
@@ -201,7 +201,7 @@ class SellThroughReport(LoginRequiredMixin, ReportAccessMixin, TemplateView):
         
         cat_sales = sales_qs.values('product_category').annotate(
             sold_qty=Sum('quantity'),
-            sold_value=Sum('final_amount')
+            sold_value=Sum('revenue')
         )
         
         sellthrough_by_cat = []
@@ -388,7 +388,7 @@ class CombinedInsightsReport(LoginRequiredMixin, ReportAccessMixin, TemplateView
             top_buyers = sales_qs.filter(client_mobile__in=list(matched_mobiles)[:100]).values(
                 'client_name', 'client_mobile'
             ).annotate(
-                total_spent=Sum('final_amount'),
+                total_spent=Sum('revenue'),
                 total_qty=Sum('quantity'),
                 order_count=Count('id')
             ).order_by('-total_spent')[:20]
@@ -414,7 +414,7 @@ class CombinedInsightsReport(LoginRequiredMixin, ReportAccessMixin, TemplateView
         
         # Store performance comparison
         store_crm = crm_qs.exclude(store_name='').values('store_name').annotate(contacts=Count('id'))
-        store_sales = sales_qs.exclude(region='').values('region').annotate(revenue=Sum('final_amount'))
+        store_sales = sales_qs.exclude(region='').values('region').annotate(revenue=Sum('revenue'))
         
         context['store_crm'] = list(store_crm)[:10]
         context['store_sales'] = list(store_sales)[:10]

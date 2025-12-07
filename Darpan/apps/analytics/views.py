@@ -49,8 +49,8 @@ class AnalyticsDashboardView(LoginRequiredMixin, DashboardAccessMixin, TemplateV
         sales_only = sales_qs.filter(transaction_type='sale')
         returns_only = sales_qs.filter(transaction_type='return')
         
-        total_revenue = sales_only.aggregate(total=Sum('final_amount'))['total'] or 0
-        total_returns = abs(returns_only.aggregate(total=Sum('final_amount'))['total'] or 0)
+        total_revenue = sales_only.aggregate(total=Sum('revenue'))['total'] or 0
+        total_returns = abs(returns_only.aggregate(total=Sum('revenue'))['total'] or 0)
         net_sales = total_revenue - total_returns
         
         sales_count = sales_only.count()
@@ -113,7 +113,7 @@ class AnalyticsDashboardView(LoginRequiredMixin, DashboardAccessMixin, TemplateV
         
         # ============== SALES BY CATEGORY ==============
         category_data = sales_only.values('product_category').annotate(
-            total=Sum('final_amount')
+            total=Sum('revenue')
         ).order_by('-total')[:8]
         
         context['category_labels'] = json.dumps([item['product_category'] or 'Other' for item in category_data])
@@ -121,7 +121,7 @@ class AnalyticsDashboardView(LoginRequiredMixin, DashboardAccessMixin, TemplateV
         
         # ============== SALES BY LOCATION ==============
         location_data = sales_only.values('region').annotate(
-            total=Sum('final_amount')
+            total=Sum('revenue')
         ).order_by('-total')[:8]
         
         context['location_labels'] = json.dumps([item['region'] or 'Unknown' for item in location_data])
@@ -137,14 +137,14 @@ class AnalyticsDashboardView(LoginRequiredMixin, DashboardAccessMixin, TemplateV
         
         # ============== TOP PRODUCTS ==============
         top_products = sales_only.values('style_code', 'product_category').annotate(
-            total=Sum('final_amount'),
+            total=Sum('revenue'),
             count=Count('id')
         ).order_by('-total')[:10]
         context['top_products'] = list(top_products)
         
         # ============== TOP SALES PEOPLE ==============
         top_sales_people = sales_only.exclude(sales_person='').values('sales_person').annotate(
-            total=Sum('final_amount'),
+            total=Sum('revenue'),
             count=Count('id')
         ).order_by('-total')[:10]
         context['top_sales_people'] = list(top_sales_people)
@@ -173,26 +173,26 @@ class AdvancedAnalyticsView(LoginRequiredMixin, DashboardAccessMixin, TemplateVi
         qs = SalesRecord.objects.filter(company=company) if company else SalesRecord.objects.none()
 
         kpi_data = qs.aggregate(
-            total_revenue=Sum('final_amount'),
+            total_revenue=Sum('revenue'),
             gross_weight=Sum('gross_weight'),
             net_weight=Sum('net_weight'),
             total_transactions=Count('id')
         )
         context.update(kpi_data)
 
-        category_data = qs.values('product_category').annotate(total=Sum('final_amount')).order_by('-total')
+        category_data = qs.values('product_category').annotate(total=Sum('revenue')).order_by('-total')
         context['category_labels'] = [item['product_category'] or 'Unknown' for item in category_data]
         context['category_values'] = [float(item['total'] or 0) for item in category_data]
 
-        metal_data = qs.values('base_metal').annotate(total=Sum('final_amount')).order_by('-total')
+        metal_data = qs.values('base_metal').annotate(total=Sum('revenue')).order_by('-total')
         context['metal_labels'] = [item['base_metal'] or 'Unknown' for item in metal_data]
         context['metal_values'] = [float(item['total'] or 0) for item in metal_data]
 
-        top_products = qs.values('product_name').annotate(total=Sum('final_amount')).order_by('-total')[:10]
+        top_products = qs.values('product_name').annotate(total=Sum('revenue')).order_by('-total')[:10]
         context['product_labels'] = [item['product_name'] or 'Unknown' for item in top_products]
         context['product_values'] = [float(item['total'] or 0) for item in top_products]
 
-        monthly_data = qs.annotate(month=TruncMonth('transaction_date')).values('month').annotate(total=Sum('final_amount')).order_by('month')
+        monthly_data = qs.annotate(month=TruncMonth('transaction_date')).values('month').annotate(total=Sum('revenue')).order_by('month')
         context['trend_labels'] = [item['month'].strftime('%b %Y') for item in monthly_data if item['month']]
         context['trend_values'] = [float(item['total'] or 0) for item in monthly_data if item['month'] and item['total']]
 
@@ -215,8 +215,8 @@ class SalesKPIView(LoginRequiredMixin, DashboardAccessMixin, TemplateView):
         returns_qs = qs.filter(transaction_type='return')
         
         # KPI Calculations
-        total_revenue = sales_qs.aggregate(total=Sum('final_amount'))['total'] or 0
-        total_returns = abs(returns_qs.aggregate(total=Sum('final_amount'))['total'] or 0)
+        total_revenue = sales_qs.aggregate(total=Sum('revenue'))['total'] or 0
+        total_returns = abs(returns_qs.aggregate(total=Sum('revenue'))['total'] or 0)
         net_sales = total_revenue - total_returns
         
         sales_count = sales_qs.count()
@@ -239,7 +239,7 @@ class SalesKPIView(LoginRequiredMixin, DashboardAccessMixin, TemplateView):
         
         # Sales by Location
         location_data = sales_qs.values('region').annotate(
-            total=Sum('final_amount'),
+            total=Sum('revenue'),
             count=Count('id')
         ).order_by('-total')[:10]
         context['location_data'] = list(location_data)
@@ -248,7 +248,7 @@ class SalesKPIView(LoginRequiredMixin, DashboardAccessMixin, TemplateView):
         
         # Sales by Category
         category_data = sales_qs.values('product_category').annotate(
-            total=Sum('final_amount'),
+            total=Sum('revenue'),
             count=Count('id')
         ).order_by('-total')[:10]
         context['category_data'] = list(category_data)
@@ -257,7 +257,7 @@ class SalesKPIView(LoginRequiredMixin, DashboardAccessMixin, TemplateView):
         
         # Top Selling Products (by style code)
         top_products = sales_qs.values('style_code', 'product_category').annotate(
-            total=Sum('final_amount'),
+            total=Sum('revenue'),
             count=Count('id'),
             margin=Sum('gross_margin')
         ).order_by('-total')[:15]
@@ -265,7 +265,7 @@ class SalesKPIView(LoginRequiredMixin, DashboardAccessMixin, TemplateView):
         
         # Top Sales People
         top_sales_people = sales_qs.exclude(sales_person='').values('sales_person').annotate(
-            total=Sum('final_amount'),
+            total=Sum('revenue'),
             count=Count('id')
         ).order_by('-total')[:10]
         context['top_sales_people'] = list(top_sales_people)

@@ -243,11 +243,13 @@ class FlexibleImporter:
                         continue
                     
                     # Parse financial values
+                    revenue = self._parse_decimal(row.get('revenue', 0))  # Gross Amount after discount
                     final_amount = self._parse_decimal(row.get('final_amount', 0))
                     gross_margin = self._parse_decimal(row.get('gross_margin', 0))
                     
                     # Apply negative sign for returns
                     if tx_type == 'return':
+                        revenue = -abs(revenue)
                         final_amount = -abs(final_amount)
                         gross_margin = -abs(gross_margin)
                     
@@ -278,6 +280,7 @@ class FlexibleImporter:
                         discount_amount=self._parse_decimal(row.get('discount_amount')),
                         discount_percentage=self._parse_decimal(row.get('discount_percentage')),
                         gst_amount=self._parse_decimal(row.get('gst_amount')),
+                        revenue=revenue,  # Gross Amount after discount - cash collected
                         final_amount=final_amount,
                         gross_margin=gross_margin,
                         region=str(row.get('region', ''))[:100],
