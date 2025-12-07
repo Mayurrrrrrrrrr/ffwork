@@ -28,7 +28,7 @@ def reverse_roles(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0004_module_usermodule_companymodule'),  # Adjust to your latest migration
+        ('core', '0006_seed_modules'),  # Correct dependency
     ]
 
     operations = [
