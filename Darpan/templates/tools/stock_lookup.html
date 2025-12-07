@@ -32,7 +32,7 @@
                                 <option value="all">All Categories</option>
                                 {% for cat in categories %}
                                 {% if cat %}
-                                <option value="{{ cat }}" {% if current_filters.category == cat %}selected{% endif %}>{{
+                                <option value="{{ cat }}" {% if current_filters.category==cat %}selected{% endif %}>{{
                                     cat }}</option>
                                 {% endif %}
                                 {% endfor %}
@@ -45,7 +45,7 @@
                                 <option value="all">All Metals</option>
                                 {% for metal in metals %}
                                 {% if metal %}
-                                <option value="{{ metal }}" {% if current_filters.metal == metal %}selected{% endif %}>{{
+                                <option value="{{ metal }}" {% if current_filters.metal==metal %}selected{% endif %}>{{
                                     metal }}</option>
                                 {% endif %}
                                 {% endfor %}
@@ -58,7 +58,7 @@
                                 <option value="all">All Sizes</option>
                                 {% for size in sizes %}
                                 {% if size %}
-                                <option value="{{ size }}" {% if current_filters.size == size %}selected{% endif %}>{{
+                                <option value="{{ size }}" {% if current_filters.size==size %}selected{% endif %}>{{
                                     size }}</option>
                                 {% endif %}
                                 {% endfor %}
@@ -71,7 +71,7 @@
                                 <option value="all">All Locations</option>
                                 {% for loc in locations %}
                                 {% if loc %}
-                                <option value="{{ loc }}" {% if current_filters.location == loc %}selected{% endif %}>{{
+                                <option value="{{ loc }}" {% if current_filters.location==loc %}selected{% endif %}>{{
                                     loc }}</option>
                                 {% endif %}
                                 {% endfor %}
@@ -104,22 +104,22 @@
         <!-- Results Gallery -->
         <div class="col-md-9 col-lg-10">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4>Search Results <span class="text-muted fs-6">({{ page_obj.paginator.count }} items found)</span>
+                <h4>Search Results <span class="text-muted fs-6">({{ grouped_items|length }} styles found)</span>
                 </h4>
             </div>
 
-            {% if stock_items %}
+            {% if grouped_items %}
             <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
-                {% for item in stock_items %}
+                {% for group in grouped_items %}
                 <div class="col">
                     <div class="card h-100 shadow-sm product-card">
                         <!-- Product Image from S3 -->
                         <div class="bg-light d-flex align-items-center justify-content-center"
                             style="height: 200px; overflow: hidden;">
-                            {% if item.style_code %}
-                            <img src="https://fireflylgd-assets.s3.eu-north-1.amazonaws.com/public/shopify/compressed-images/{{ item.style_code|slice:':3' }}/{{ item.style_code }}.jpg"
-                                class="card-img-top" alt="{{ item.style_code }}"
-                                onerror="this.onerror=null; this.src='https://via.placeholder.com/300x300?text={{ item.style_code|slice:':6' }}';">
+                            {% if group.style_code %}
+                            <img src="https://fireflylgd-assets.s3.eu-north-1.amazonaws.com/public/shopify/compressed-images/{{ group.style_code|slice:':3' }}/{{ group.style_code }}.jpg"
+                                class="card-img-top" alt="{{ group.style_code }}"
+                                onerror="this.onerror=null; this.src='https://via.placeholder.com/300x300?text={{ group.style_code|slice:':6' }}';">
                             {% else %}
                             <span class="text-muted"><i data-lucide="image"
                                     style="width: 48px; height: 48px;"></i></span>
@@ -127,37 +127,63 @@
                         </div>
 
                         <div class="card-body">
-                            <h6 class="card-title text-truncate" title="{{ item.style_code }}">
-                                {{ item.style_code }}
+                            <h6 class="card-title text-truncate" title="{{ group.style_code }}">
+                                {{ group.style_code }}
                             </h6>
                             <p class="card-text small mb-1">
-                                <span class="badge bg-secondary">{{ item.category }}</span>
-                                {% if item.sub_category %}
-                                <span class="badge bg-info text-dark">{{ item.sub_category }}</span>
+                                <span class="badge bg-secondary">{{ group.category }}</span>
+                                {% if group.sub_category %}
+                                <span class="badge bg-info text-dark">{{ group.sub_category }}</span>
                                 {% endif %}
                             </p>
                             <p class="card-text small text-muted mb-1">
-                                {{ item.base_metal }} | {{ item.gross_weight }}g
-                                {% if item.diamond_pieces %} | {{ item.diamond_pieces }} dia{% endif %}
+                                {{ group.base_metal }}
                             </p>
-                            {% if item.certificate_no %}
-                            <p class="card-text small mb-1">
-                                <span class="badge bg-warning text-dark"><i data-lucide="award" style="width:12px;"></i>
-                                    {{ item.certificate_no }}</span>
-                            </p>
-                            {% endif %}
                             <div class="d-flex justify-content-between align-items-center mt-2">
-                                <span class="fw-bold text-success">₹{{ item.sale_price|floatformat:0 }}</span>
-                                <span class="badge {% if item.quantity > 0 %}bg-success{% else %}bg-danger{% endif %}">
-                                    Qty: {{ item.quantity }}
+                                <span class="fw-bold text-success">
+                                    {% if group.min_price == group.max_price %}
+                                    ₹{{ group.min_price|floatformat:0 }}
+                                    {% else %}
+                                    ₹{{ group.min_price|floatformat:0 }} - ₹{{ group.max_price|floatformat:0 }}
+                                    {% endif %}
+                                </span>
+                                <span
+                                    class="badge {% if group.total_qty > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                    Total: {{ group.total_qty }}
                                 </span>
                             </div>
-                            <div class="mt-2 small text-muted">
-                                <i data-lucide="map-pin" style="width: 14px;"></i> {{ item.location }}
+
+                            <!-- Locations Toggle -->
+                            <div class="mt-2">
+                                <button class="btn btn-sm btn-outline-primary w-100" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#locations-{{ forloop.counter }}">
+                                    <i data-lucide="map-pin" style="width: 14px;"></i>
+                                    {{ group.locations|length }} Location{% if group.locations|length > 1 %}s{% endif %}
+                                </button>
+                                <div class="collapse mt-2" id="locations-{{ forloop.counter }}">
+                                    <div class="list-group list-group-flush small">
+                                        {% for loc in group.locations %}
+                                        <div class="list-group-item p-2">
+                                            <div class="d-flex justify-content-between">
+                                                <strong>{{ loc.location }}</strong>
+                                                <span class="badge bg-success">{{ loc.quantity }}</span>
+                                            </div>
+                                            <div class="text-muted" style="font-size: 0.75rem;">
+                                                ₹{{ loc.sale_price|floatformat:0 }} | {{ loc.gross_weight }}g
+                                                {% if loc.diamond_pieces %} | {{ loc.diamond_pieces }} dia{% endif %}
+                                            </div>
+                                            {% if loc.jewel_code %}
+                                            <div class="text-muted" style="font-size: 0.7rem;">
+                                                <code>{{ loc.jewel_code }}</code>
+                                                {% if loc.certificate_no %}<span class="badge bg-warning text-dark">{{
+                                                    loc.certificate_no }}</span>{% endif %}
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="card-footer bg-white border-top-0 small text-muted">
-                            Jewel: {{ item.jewel_code|truncatechars:20 }}
                         </div>
                     </div>
                 </div>

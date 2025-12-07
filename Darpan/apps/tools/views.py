@@ -114,6 +114,38 @@ class StockLookupView(LoginRequiredMixin, StockAccessRequiredMixin, ListView):
         
         # Pass current filters to context
         context['current_filters'] = self.request.GET
+        
+        # Group items by style_code
+        stock_items = context.get('stock_items', [])
+        grouped = {}
+        for item in stock_items:
+            style = item.style_code
+            if style not in grouped:
+                grouped[style] = {
+                    'style_code': style,
+                    'category': item.category,
+                    'sub_category': item.sub_category,
+                    'base_metal': item.base_metal,
+                    'total_qty': 0,
+                    'min_price': item.sale_price,
+                    'max_price': item.sale_price,
+                    'locations': [],
+                    'first_item': item,
+                }
+            grouped[style]['total_qty'] += item.quantity
+            grouped[style]['min_price'] = min(grouped[style]['min_price'], item.sale_price)
+            grouped[style]['max_price'] = max(grouped[style]['max_price'], item.sale_price)
+            grouped[style]['locations'].append({
+                'location': item.location,
+                'quantity': item.quantity,
+                'sale_price': item.sale_price,
+                'jewel_code': item.jewel_code,
+                'certificate_no': item.certificate_no,
+                'gross_weight': item.gross_weight,
+                'diamond_pieces': item.diamond_pieces,
+            })
+        
+        context['grouped_items'] = list(grouped.values())
         return context
 
 
