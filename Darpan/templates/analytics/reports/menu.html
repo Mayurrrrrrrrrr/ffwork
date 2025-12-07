@@ -12,24 +12,101 @@
     </div>
 
     <div class="row g-4">
-        {% for report in reports %}
         <div class="col-md-4">
-            <a href="{% url report.url %}" class="text-decoration-none">
+            <a href="{% url 'analytics:report_sales' %}" class="text-decoration-none">
                 <div class="card border-0 shadow-sm h-100 report-card">
                     <div class="card-body text-center py-4">
-                        <div class="display-4 mb-3">
-                            {% if report.icon == 'trending-up' %}📈{% elif report.icon == 'package' %}📦{% elif
-                            report.icon == 'bar-chart-2' %}📊{% elif report.icon == 'users' %}👥{% elif report.icon ==
-                            'box' %}📦{% elif report.icon == 'layers' %}🔗{% elif report.icon == 'calendar' %}📅{% elif
-                            report.icon == 'user-check' %}👤{% else %}📄{% endif %}
-                        </div>
-                        <h5 class="card-title text-dark">{{ report.name }}</h5>
-                        <p class="card-text text-muted small">{{ report.desc }}</p>
+                        <div class="display-4 mb-3">📈</div>
+                        <h5 class="card-title text-dark">Sales Performance</h5>
+                        <p class="card-text text-muted small">Revenue by store, salesperson, and time</p>
                     </div>
                 </div>
             </a>
         </div>
-        {% endfor %}
+
+        <div class="col-md-4">
+            <a href="{% url 'analytics:report_products' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 report-card">
+                    <div class="card-body text-center py-4">
+                        <div class="display-4 mb-3">📦</div>
+                        <h5 class="card-title text-dark">Product Analysis</h5>
+                        <p class="card-text text-muted small">Top sellers, slow movers, category performance</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{% url 'analytics:report_sellthrough' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 report-card">
+                    <div class="card-body text-center py-4">
+                        <div class="display-4 mb-3">📊</div>
+                        <h5 class="card-title text-dark">Sell-Through Analysis</h5>
+                        <p class="card-text text-muted small">Sales vs stock by style, category</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{% url 'analytics:report_customers' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 report-card">
+                    <div class="card-body text-center py-4">
+                        <div class="display-4 mb-3">👥</div>
+                        <h5 class="card-title text-dark">Customer Insights</h5>
+                        <p class="card-text text-muted small">CRM data, birthdays, lead status</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{% url 'analytics:report_stock' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 report-card">
+                    <div class="card-body text-center py-4">
+                        <div class="display-4 mb-3">📦</div>
+                        <h5 class="card-title text-dark">Stock Summary</h5>
+                        <p class="card-text text-muted small">Value by location, low stock alerts</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{% url 'analytics:report_combined' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 report-card">
+                    <div class="card-body text-center py-4">
+                        <div class="display-4 mb-3">🔗</div>
+                        <h5 class="card-title text-dark">Combined Insights</h5>
+                        <p class="card-text text-muted small">CRM + Sales combined analysis</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{% url 'analytics:report_exhibition' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 report-card">
+                    <div class="card-body text-center py-4">
+                        <div class="display-4 mb-3">📅</div>
+                        <h5 class="card-title text-dark">Exhibition Report</h5>
+                        <p class="card-text text-muted small">Exhibition sales analysis</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4">
+            <a href="{% url 'analytics:report_salesperson' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 report-card">
+                    <div class="card-body text-center py-4">
+                        <div class="display-4 mb-3">👤</div>
+                        <h5 class="card-title text-dark">Salesperson Scorecard</h5>
+                        <p class="card-text text-muted small">Individual performance metrics</p>
+                    </div>
+                </div>
+            </a>
+        </div>
     </div>
 </div>
 
