@@ -9,7 +9,7 @@ from apps.analytics.models import SalesRecord
 class AIAssistant:
     def __init__(self):
         self.client = None
-        self.model = "llama-3.1-70b-versatile"
+        self.model = "llama-3.3-70b-versatile"  # Updated from decommissioned 3.1
         self._init_client()
     
     def _init_client(self):

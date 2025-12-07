@@ -34,9 +34,15 @@ class AnalyticsDashboardView(LoginRequiredMixin, DashboardAccessMixin, TemplateV
         company = self.request.user.company
         
         if not company:
-            # Fallback for users without company
+            # Fallback for platform admins - find a company with data
             from apps.core.models import Company
-            company = Company.objects.first()
+            # Try to get a company that has stock or sales data
+            for c in Company.objects.all():
+                if StockSnapshot.objects.filter(company=c).exists() or SalesRecord.objects.filter(company=c).exists():
+                    company = c
+                    break
+            if not company:
+                company = Company.objects.first()
         
         # ============== SALES KPIs ==============
         sales_qs = SalesRecord.objects.filter(company=company) if company else SalesRecord.objects.none()
