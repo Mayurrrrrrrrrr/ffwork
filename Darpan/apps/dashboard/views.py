@@ -140,6 +140,9 @@ def portal_home(request):
     is_purchase_team = user.has_any_role(['purchase_team', 'admin'])
     can_manage_referrals = user.has_any_role(['admin', 'accounts', 'approver', 'sales_team'])
     
+    # Get user's accessible modules
+    user_modules = user.get_accessible_modules()
+    
     context = {
         'page_title': 'Portal Home',
         'birthdays_today': birthdays_today,
@@ -168,6 +171,8 @@ def portal_home(request):
         'stock_value': stock_value,
         'tasks_complete': tasks_complete,
         'tasks_pending': tasks_pending,
+        # User's accessible modules
+        'user_modules': user_modules,
     }
     
     return render(request, 'dashboard/portal_home.html', context)

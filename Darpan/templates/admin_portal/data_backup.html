@@ -1,0 +1,108 @@
+{% extends "base/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Data Backup{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i data-lucide="download" class="me-2" style="width:24px;height:24px;"></i>
+                        Request Backup
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">
+                        Export module data as JSON files. Select a company and optionally a specific module.
+                    </p>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+
+                        <button type="submit" class="btn btn-primary w-100 mt-3">
+                            <i data-lucide="play" class="me-1" style="width:16px;height:16px;"></i>
+                            Start Backup
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card shadow">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">
+                        <i data-lucide="history" class="me-2" style="width:24px;height:24px;"></i>
+                        Recent Backups
+                    </h4>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Company</th>
+                                    <th>Module</th>
+                                    <th>Status</th>
+                                    <th>Size</th>
+                                    <th>Date</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for backup in recent_backups %}
+                                <tr>
+                                    <td>{{ backup.company.name|default:"All" }}</td>
+                                    <td>{{ backup.module.name|default:"All Modules" }}</td>
+                                    <td>
+                                        {% if backup.status == 'completed' %}
+                                        <span class="badge bg-success">Completed</span>
+                                        {% elif backup.status == 'processing' %}
+                                        <span class="badge bg-warning">Processing</span>
+                                        {% elif backup.status == 'failed' %}
+                                        <span class="badge bg-danger">Failed</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Pending</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if backup.file_size %}
+                                        {{ backup.file_size|filesizeformat }}
+                                        {% else %}
+                                        -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ backup.created_at|date:"M d, H:i" }}</td>
+                                    <td>
+                                        {% if backup.status == 'completed' %}
+                                        <a href="{% url 'admin_portal:backup_download' pk=backup.pk %}"
+                                            class="btn btn-sm btn-outline-primary">
+                                            <i data-lucide="download" style="width:14px;height:14px;"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        No backups yet
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

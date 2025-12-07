@@ -36,11 +36,18 @@
                     </thead>
                     <tbody>
                         {% for company in companies %}
-                        <tr>
-                            <td class="ps-4 fw-bold">{{ company.name }}</td>
+                        <tr {% if company.is_deleted %}class="table-secondary" {% endif %}>
+                            <td class="ps-4 fw-bold">
+                                {{ company.name }}
+                                {% if company.is_deleted %}
+                                <span class="badge bg-warning ms-2">Deleted</span>
+                                {% endif %}
+                            </td>
                             <td><code>{{ company.company_code }}</code></td>
                             <td>
-                                {% if company.is_active %}
+                                {% if company.is_deleted %}
+                                <span class="badge bg-warning">Soft Deleted</span>
+                                {% elif company.is_active %}
                                 <span class="badge bg-success">Active</span>
                                 {% else %}
                                 <span class="badge bg-danger">Inactive</span>
@@ -48,14 +55,29 @@
                             </td>
                             <td>{{ company.created_at|date:"M d, Y" }}</td>
                             <td class="text-end pe-4">
+                                {% if company.is_deleted %}
+                                <a href="{% url 'admin_portal:company_restore' company.pk %}"
+                                    class="btn btn-sm btn-success" title="Restore">
+                                    <i data-lucide="rotate-ccw" style="width: 16px;"></i> Restore
+                                </a>
+                                {% else %}
+                                <a href="{% url 'admin_portal:company_modules' company.pk %}"
+                                    class="btn btn-sm btn-outline-info me-1" title="Manage Modules">
+                                    <i data-lucide="grid" style="width: 16px;"></i>
+                                </a>
                                 <a href="{% url 'admin_portal:company_admin_create' company.pk %}"
                                     class="btn btn-sm btn-outline-success me-1" title="Create Admin">
-                                    <i data-lucide="user-plus" style="width: 16px;"></i> Add Admin
+                                    <i data-lucide="user-plus" style="width: 16px;"></i>
                                 </a>
                                 <a href="{% url 'admin_portal:company_update' company.pk %}"
-                                    class="btn btn-sm btn-outline-primary" title="Edit">
-                                    <i data-lucide="edit-2" style="width: 16px;"></i> Edit
+                                    class="btn btn-sm btn-outline-primary me-1" title="Edit">
+                                    <i data-lucide="edit-2" style="width: 16px;"></i>
                                 </a>
+                                <a href="{% url 'admin_portal:company_delete' company.pk %}"
+                                    class="btn btn-sm btn-outline-danger" title="Delete">
+                                    <i data-lucide="trash-2" style="width: 16px;"></i>
+                                </a>
+                                {% endif %}
                             </td>
                         </tr>
                         {% empty %}

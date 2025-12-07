@@ -14,7 +14,11 @@ from django.db.models import Count
 from django.http import Http404
 
 from apps.core.models import User, Store, AuditLog, Company, Role
-from .forms import UserForm, StoreForm, CompanyForm, CompanyAdminForm
+from .forms import (
+    UserForm, StoreForm, CompanyForm, CompanyAdminForm,
+    CompanyModuleForm, UserModuleForm, CompanyDeleteForm, 
+    DataPurgeForm, BackupRequestForm
+)
 
 
 # --- Mixins ---
@@ -273,3 +277,419 @@ class CompanyAdminCreateView(LoginRequiredMixin, PlatformAdminRequiredMixin, Cre
     
     def get_success_url(self):
         return reverse_lazy('admin_portal:company_list')
+
+
+# --- Platform Admin: Company Module Allocation ---
+
+class CompanyModuleView(LoginRequiredMixin, PlatformAdminRequiredMixin, TemplateView):
+    """Platform admin: Allocate modules to a company."""
+    template_name = 'admin_portal/company_modules.html'
+    
+    def get_company(self):
+        return get_object_or_404(Company, pk=self.kwargs['pk'])
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        company = self.get_company()
+        context['company'] = company
+        context['form'] = CompanyModuleForm(company=company)
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        company = self.get_company()
+        form = CompanyModuleForm(request.POST, company=company)
+        if form.is_valid():
+            form.save(allocated_by=request.user)
+            messages.success(request, f"Module allocation updated for {company.name}!")
+            return redirect('admin_portal:company_list')
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+class CompanyDeleteView(LoginRequiredMixin, PlatformAdminRequiredMixin, TemplateView):
+    """Platform admin: Delete a company (soft or hard delete)."""
+    template_name = 'admin_portal/company_delete.html'
+    
+    def get_company(self):
+        return get_object_or_404(Company, pk=self.kwargs['pk'])
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        company = self.get_company()
+        context['company'] = company
+        context['form'] = CompanyDeleteForm(company=company)
+        # Show stats
+        context['user_count'] = User.objects.filter(company=company).count()
+        context['store_count'] = Store.objects.filter(company=company).count()
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        from django.utils import timezone
+        company = self.get_company()
+        form = CompanyDeleteForm(request.POST, company=company)
+        
+        if form.is_valid():
+            hard_delete = form.cleaned_data.get('hard_delete', False)
+            
+            if hard_delete:
+                company_name = company.name
+                company.delete()
+                messages.success(request, f"Company '{company_name}' has been permanently deleted.")
+            else:
+                company.is_deleted = True
+                company.deleted_at = timezone.now()
+                company.deleted_by = request.user
+                company.is_active = False
+                company.save()
+                messages.success(request, f"Company '{company.name}' has been soft-deleted. It can be restored if needed.")
+            
+            return redirect('admin_portal:company_list')
+        
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+class CompanyRestoreView(LoginRequiredMixin, PlatformAdminRequiredMixin, TemplateView):
+    """Platform admin: Restore a soft-deleted company."""
+    template_name = 'admin_portal/company_restore.html'
+    
+    def get_company(self):
+        return get_object_or_404(Company, pk=self.kwargs['pk'], is_deleted=True)
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['company'] = self.get_company()
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        company = self.get_company()
+        company.is_deleted = False
+        company.deleted_at = None
+        company.deleted_by = None
+        company.is_active = True
+        company.save()
+        messages.success(request, f"Company '{company.name}' has been restored!")
+        return redirect('admin_portal:company_list')
+
+
+# --- Platform Admin: Data Backup ---
+
+class DataBackupView(LoginRequiredMixin, PlatformAdminRequiredMixin, TemplateView):
+    """Platform admin: Request module data backup."""
+    template_name = 'admin_portal/data_backup.html'
+    
+    def get_context_data(self, **kwargs):
+        from apps.core.models import BackupTask, Module
+        context = super().get_context_data(**kwargs)
+        context['form'] = BackupRequestForm()
+        context['modules'] = Module.objects.filter(is_active=True).order_by('order')
+        context['recent_backups'] = BackupTask.objects.order_by('-created_at')[:20]
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        from apps.core.models import BackupTask
+        form = BackupRequestForm(request.POST)
+        
+        if form.is_valid():
+            company = form.cleaned_data.get('company')
+            module = form.cleaned_data.get('module')
+            
+            # Create backup task
+            backup_task = BackupTask.objects.create(
+                company=company,
+                module=module,
+                requested_by=request.user,
+                status='pending'
+            )
+            
+            # Trigger async backup (via Celery if available, otherwise sync)
+            try:
+                from apps.admin_portal.tasks import process_backup_task
+                process_backup_task.delay(backup_task.id)
+                messages.info(request, f"Backup task created. You'll be notified when it's ready.")
+            except ImportError:
+                # Celery not available, process synchronously
+                self._process_backup_sync(backup_task)
+                messages.success(request, f"Backup created successfully!")
+            
+            return redirect('admin_portal:data_backup')
+        
+        return self.render_to_response(self.get_context_data(form=form))
+    
+    def _process_backup_sync(self, backup_task):
+        """Process backup synchronously (fallback if Celery not available)."""
+        import json
+        import os
+        from django.conf import settings
+        from django.utils import timezone
+        from apps.core.models import Module
+        
+        backup_task.status = 'processing'
+        backup_task.save()
+        
+        try:
+            # Create backup directory
+            backup_dir = os.path.join(settings.MEDIA_ROOT, 'backups')
+            os.makedirs(backup_dir, exist_ok=True)
+            
+            # Generate filename
+            timestamp = timezone.now().strftime('%Y%m%d_%H%M%S')
+            company_code = backup_task.company.company_code if backup_task.company else 'all'
+            module_code = backup_task.module.code if backup_task.module else 'all'
+            filename = f"backup_{company_code}_{module_code}_{timestamp}.json"
+            filepath = os.path.join(backup_dir, filename)
+            
+            # Export data based on module
+            data = self._export_module_data(backup_task.company, backup_task.module)
+            
+            # Write to file
+            with open(filepath, 'w') as f:
+                json.dump(data, f, indent=2, default=str)
+            
+            # Update task status
+            backup_task.status = 'completed'
+            backup_task.file_path = filepath
+            backup_task.file_size = os.path.getsize(filepath)
+            backup_task.completed_at = timezone.now()
+            backup_task.save()
+            
+        except Exception as e:
+            backup_task.status = 'failed'
+            backup_task.error_message = str(e)
+            backup_task.save()
+    
+    def _export_module_data(self, company, module):
+        """Export data for a specific module."""
+        data = {
+            'export_info': {
+                'company': company.name if company else 'All Companies',
+                'module': module.name if module else 'All Modules',
+            },
+            'data': {}
+        }
+        
+        # Get module-specific data
+        if not module or module.code == 'expenses':
+            self._export_expenses(data, company)
+        if not module or module.code == 'btl':
+            self._export_btl(data, company)
+        if not module or module.code == 'tasks':
+            self._export_tasks(data, company)
+        if not module or module.code == 'analytics':
+            self._export_analytics(data, company)
+        if not module or module.code == 'purchasing':
+            self._export_purchasing(data, company)
+        
+        return data
+    
+    def _export_expenses(self, data, company):
+        try:
+            from apps.expenses.models import ExpenseReport, ExpenseItem
+            qs = ExpenseReport.objects.all()
+            if company:
+                qs = qs.filter(company=company)
+            data['data']['expenses'] = list(qs.values())
+        except:
+            pass
+    
+    def _export_btl(self, data, company):
+        try:
+            from apps.btl.models import BTLProposal
+            qs = BTLProposal.objects.all()
+            if company:
+                qs = qs.filter(company=company)
+            data['data']['btl'] = list(qs.values())
+        except:
+            pass
+    
+    def _export_tasks(self, data, company):
+        try:
+            from apps.tasks.models import Task
+            qs = Task.objects.all()
+            if company:
+                qs = qs.filter(company=company)
+            data['data']['tasks'] = list(qs.values())
+        except:
+            pass
+    
+    def _export_analytics(self, data, company):
+        try:
+            from apps.analytics.models import SalesRecord, StockSnapshot
+            sales_qs = SalesRecord.objects.all()
+            stock_qs = StockSnapshot.objects.all()
+            if company:
+                sales_qs = sales_qs.filter(company=company)
+                stock_qs = stock_qs.filter(company=company)
+            data['data']['sales'] = list(sales_qs.values())
+            data['data']['stock'] = list(stock_qs.values())
+        except:
+            pass
+    
+    def _export_purchasing(self, data, company):
+        try:
+            from apps.purchasing.models import PurchaseOrder, POItem
+            qs = PurchaseOrder.objects.all()
+            if company:
+                qs = qs.filter(company=company)
+            data['data']['purchase_orders'] = list(qs.values())
+        except:
+            pass
+
+
+class BackupDownloadView(LoginRequiredMixin, PlatformAdminRequiredMixin, TemplateView):
+    """Download a completed backup file."""
+    
+    def get(self, request, *args, **kwargs):
+        from django.http import FileResponse, Http404
+        from apps.core.models import BackupTask
+        import os
+        
+        backup_id = kwargs.get('pk')
+        backup_task = get_object_or_404(BackupTask, pk=backup_id, status='completed')
+        
+        if not backup_task.file_path or not os.path.exists(backup_task.file_path):
+            raise Http404("Backup file not found")
+        
+        response = FileResponse(open(backup_task.file_path, 'rb'), content_type='application/json')
+        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(backup_task.file_path)}"'
+        return response
+
+
+# --- Company Admin: User Module Allocation ---
+
+class UserModuleView(LoginRequiredMixin, CompanyAdminRequiredMixin, TemplateView):
+    """Company admin: Allocate modules to a user."""
+    template_name = 'admin_portal/user_modules.html'
+    
+    def get_user_obj(self):
+        user = get_object_or_404(User, pk=self.kwargs['pk'])
+        # Ensure user belongs to the same company
+        if user.company != self.request.user.company:
+            raise Http404("User not found")
+        return user
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user_obj = self.get_user_obj()
+        context['user_obj'] = user_obj
+        context['form'] = UserModuleForm(user_obj=user_obj, company=self.request.user.company)
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        user_obj = self.get_user_obj()
+        form = UserModuleForm(request.POST, user_obj=user_obj, company=request.user.company)
+        if form.is_valid():
+            form.save(allocated_by=request.user)
+            messages.success(request, f"Module allocation updated for {user_obj.full_name}!")
+            return redirect('admin_portal:user_list')
+        return self.render_to_response(self.get_context_data(form=form))
+
+
+# --- Company Admin: Data Purge ---
+
+class DataPurgeView(LoginRequiredMixin, CompanyAdminRequiredMixin, TemplateView):
+    """Company admin: Purge module data."""
+    template_name = 'admin_portal/data_purge.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        company = self.request.user.company
+        context['company'] = company
+        context['form'] = DataPurgeForm(company=company)
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        company = request.user.company
+        form = DataPurgeForm(request.POST, company=company)
+        
+        if form.is_valid():
+            modules = form.cleaned_data.get('modules', [])
+            purged = []
+            
+            for module_code in modules:
+                if module_code == 'all':
+                    self._purge_all(company)
+                    purged.append('All Data')
+                    break
+                else:
+                    self._purge_module(company, module_code)
+                    purged.append(module_code)
+            
+            # Log the purge action
+            AuditLog.objects.create(
+                company=company,
+                user=request.user,
+                action_type='data_purge',
+                target_type='company_data',
+                target_id=str(company.id),
+                log_message=f"Purged data for modules: {', '.join(purged)}"
+            )
+            
+            messages.success(request, f"Data purged successfully for: {', '.join(purged)}")
+            return redirect('admin_portal:dashboard')
+        
+        return self.render_to_response(self.get_context_data(form=form))
+    
+    def _purge_module(self, company, module_code):
+        """Purge data for a specific module."""
+        if module_code == 'expenses':
+            try:
+                from apps.expenses.models import ExpenseReport
+                ExpenseReport.objects.filter(company=company).delete()
+            except:
+                pass
+        elif module_code == 'btl':
+            try:
+                from apps.btl.models import BTLProposal
+                BTLProposal.objects.filter(company=company).delete()
+            except:
+                pass
+        elif module_code == 'tasks':
+            try:
+                from apps.tasks.models import Task
+                Task.objects.filter(company=company).delete()
+            except:
+                pass
+        elif module_code == 'purchasing':
+            try:
+                from apps.purchasing.models import PurchaseOrder
+                PurchaseOrder.objects.filter(company=company).delete()
+            except:
+                pass
+        elif module_code == 'analytics':
+            try:
+                from apps.analytics.models import SalesRecord, StockSnapshot
+                SalesRecord.objects.filter(company=company).delete()
+                StockSnapshot.objects.filter(company=company).delete()
+            except:
+                pass
+        elif module_code == 'stock':
+            try:
+                from apps.stock.models import TransferRequest
+                TransferRequest.objects.filter(company=company).delete()
+            except:
+                pass
+        elif module_code == 'old_gold':
+            try:
+                from apps.old_gold.models import OldGoldPurchase
+                OldGoldPurchase.objects.filter(company=company).delete()
+            except:
+                pass
+        elif module_code == 'referrals':
+            try:
+                from apps.referrals.models import Referral
+                Referral.objects.filter(company=company).delete()
+            except:
+                pass
+        elif module_code == 'customer_referrals':
+            try:
+                from apps.customer_referrals.models import CustomerReferral
+                CustomerReferral.objects.filter(company=company).delete()
+            except:
+                pass
+    
+    def _purge_all(self, company):
+        """Purge all data for a company."""
+        modules = ['expenses', 'btl', 'tasks', 'purchasing', 'analytics', 
+                   'stock', 'old_gold', 'referrals', 'customer_referrals']
+        for module_code in modules:
+            self._purge_module(company, module_code)
+

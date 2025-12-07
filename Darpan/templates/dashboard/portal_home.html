@@ -157,6 +157,19 @@
                 Main Portals
             </h4>
             <div class="row g-3 portal-icon-grid">
+                {% if user_modules %}
+                {% for module in user_modules %}
+                <div class="col-md-4 col-6">
+                    <a href="{% url module.url_name %}" class="card-modern hover-lift portal-card-small">
+                        <i data-lucide="{{ module.icon }}"
+                            class="portal-icon text-{{ module.color_class }} bg-{{ module.color_class }}-light"></i>
+                        <div class="fw-bold text-dark">{{ module.name }}</div>
+                        <small class="text-muted">{{ module.description|truncatechars:30 }}</small>
+                    </a>
+                </div>
+                {% endfor %}
+                {% else %}
+                <!-- Fallback: Show default modules if no allocation exists yet -->
                 <div class="col-md-4 col-6">
                     <a href="{% url 'expenses:list' %}" class="card-modern hover-lift portal-card-small">
                         <i data-lucide="credit-card" class="portal-icon text-primary bg-primary-light"></i>
@@ -204,6 +217,7 @@
                         <small class="text-muted">Analytics & insights</small>
                     </a>
                 </div>
+                {% endif %}
             </div>
         </div>
 

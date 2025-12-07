@@ -18,6 +18,10 @@ class Company(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True)
+    is_deleted = models.BooleanField(default=False, help_text="Soft delete flag")
+    deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_by = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name='deleted_companies')
     encryption_key = models.BinaryField(null=True, blank=True, help_text="Fernet key for data encryption")
     
     class Meta:
@@ -181,6 +185,43 @@ class User(AbstractUser):
     def is_company_admin(self):
         """Check if user is a company admin."""
         return self.has_role('admin') and self.company is not None
+    
+    def get_accessible_modules(self):
+        """
+        Get modules accessible to this user.
+        Returns modules that are:
+        1. Allocated to the user's company AND enabled
+        2. Allocated to the user AND enabled
+        Platform admins get all active modules.
+        """
+        from apps.core.models import Module, CompanyModule, UserModule
+        
+        if self.is_platform_admin:
+            return Module.objects.filter(is_active=True).order_by('order')
+        
+        if not self.company:
+            return Module.objects.none()
+        
+        # Get company-enabled modules
+        company_module_ids = CompanyModule.objects.filter(
+            company=self.company,
+            is_enabled=True,
+            module__is_active=True
+        ).values_list('module_id', flat=True)
+        
+        # Check if user has specific module allocations
+        user_modules = UserModule.objects.filter(user=self)
+        
+        if user_modules.exists():
+            # User has specific allocations - use intersection
+            user_enabled_ids = user_modules.filter(
+                is_enabled=True,
+                module_id__in=company_module_ids
+            ).values_list('module_id', flat=True)
+            return Module.objects.filter(id__in=user_enabled_ids, is_active=True).order_by('order')
+        else:
+            # No user-specific allocations - use company modules
+            return Module.objects.filter(id__in=company_module_ids, is_active=True).order_by('order')
 
 
 class Announcement(models.Model):
@@ -236,3 +277,108 @@ class AuditLog(models.Model):
     def __str__(self):
         user_str = self.user.full_name if self.user else "System"
         return f"{user_str} - {self.action_type} - {self.timestamp}"
+
+
+class Module(models.Model):
+    """
+    System modules that can be allocated to companies/users.
+    This is the master list of all available modules in the system.
+    """
+    code = models.CharField(max_length=50, unique=True, db_index=True,
+                           help_text="Unique identifier e.g., 'expenses', 'btl'")
+    name = models.CharField(max_length=100, help_text="Display name")
+    description = models.TextField(blank=True)
+    icon = models.CharField(max_length=50, default='box', help_text="Lucide icon name")
+    url_name = models.CharField(max_length=100, help_text="Django URL name e.g., 'expenses:list'")
+    color_class = models.CharField(max_length=50, default='primary', 
+                                   help_text="Bootstrap color class")
+    is_active = models.BooleanField(default=True)
+    order = models.IntegerField(default=0, help_text="Display order on dashboard")
+    
+    class Meta:
+        db_table = 'modules'
+        ordering = ['order', 'name']
+    
+    def __str__(self):
+        return self.name
+
+
+class CompanyModule(models.Model):
+    """
+    Module allocation for companies.
+    Platform admin allocates modules to companies.
+    """
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='company_modules')
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='company_allocations')
+    is_enabled = models.BooleanField(default=True)
+    allocated_at = models.DateTimeField(auto_now_add=True)
+    allocated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name='company_module_allocations')
+    
+    class Meta:
+        db_table = 'company_modules'
+        unique_together = ['company', 'module']
+        ordering = ['module__order']
+    
+    def __str__(self):
+        status = "enabled" if self.is_enabled else "disabled"
+        return f"{self.company.name} - {self.module.name} ({status})"
+
+
+class UserModule(models.Model):
+    """
+    Module allocation for users (subset of company modules).
+    Company admin allocates modules to users within their company.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='allocated_modules')
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, related_name='user_allocations')
+    is_enabled = models.BooleanField(default=True)
+    allocated_at = models.DateTimeField(auto_now_add=True)
+    allocated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name='user_module_allocations')
+    
+    class Meta:
+        db_table = 'user_modules'
+        unique_together = ['user', 'module']
+        ordering = ['module__order']
+    
+    def __str__(self):
+        status = "enabled" if self.is_enabled else "disabled"
+        return f"{self.user.full_name} - {self.module.name} ({status})"
+
+
+class BackupTask(models.Model):
+    """
+    Async backup task tracking.
+    Stores status and file path for module data backups.
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+    
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, 
+                               related_name='backup_tasks', null=True, blank=True)
+    module = models.ForeignKey(Module, on_delete=models.CASCADE, 
+                              related_name='backup_tasks', null=True, blank=True,
+                              help_text="Null means all modules")
+    requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
+                                     related_name='backup_requests')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    file_path = models.CharField(max_length=500, blank=True, 
+                                help_text="Path to backup file when completed")
+    file_size = models.BigIntegerField(null=True, blank=True)
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        db_table = 'backup_tasks'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        module_name = self.module.name if self.module else "All Modules"
+        return f"Backup {module_name} - {self.status}"
+
