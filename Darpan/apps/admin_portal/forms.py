@@ -58,6 +58,7 @@ class CompanyAdminForm(forms.ModelForm):
         user.company = self.company
         user.set_password(self.cleaned_data['password'])
         user.is_active = True
+        user.is_email_verified = True  # Auto-verify when created by platform admin
         if commit:
             user.save()
             # Assign admin role
