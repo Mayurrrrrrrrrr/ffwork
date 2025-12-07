@@ -18,7 +18,7 @@
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
-            <a class="nav-link {% if current_view == 'my' %}active{% endif %}" href="?view=my">
+            <a class="nav-link {% if current_view  ==  'my' %}active{% endif %}" href="?view=my">
                 Assigned to Me
                 {% if my_pending_count > 0 %}
                 <span class="badge bg-danger rounded-pill ms-1">{{ my_pending_count }}</span>
@@ -26,7 +26,7 @@
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if current_view == 'assigned' %}active{% endif %}" href="?view=assigned">
+            <a class="nav-link {% if current_view  ==  'assigned' %}active{% endif %}" href="?view=assigned">
                 Assigned by Me
             </a>
         </li>
@@ -78,7 +78,7 @@
                             </td>
                             <td>
                                 <span class="badge rounded-pill 
-                                    {% if task.priority == 'urgent' %}bg-danger
+                                    {% if task.priority  ==  'urgent' %}bg-danger
                                     {% elif task.priority == 'high' %}bg-warning text-dark
                                     {% elif task.priority == 'medium' %}bg-info text-dark
                                     {% else %}bg-secondary
@@ -88,7 +88,7 @@
                             </td>
                             <td>
                                 <span class="badge rounded-pill 
-                                    {% if task.status == 'done' %}bg-success
+                                    {% if task.status  ==  'done' %}bg-success
                                     {% elif task.status == 'in_progress' %}bg-primary
                                     {% elif task.status == 'review' %}bg-info
                                     {% else %}bg-secondary
@@ -110,7 +110,7 @@
             <div class="text-center py-5">
                 <i data-lucide="check-square" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
                 <p class="text-muted">No tasks found.</p>
-                {% if current_view == 'assigned' %}
+                {% if current_view  ==  'assigned' %}
                 <a href="{% url 'tasks:create' %}" class="btn btn-outline-primary btn-sm">Assign a task</a>
                 {% endif %}
             </div>

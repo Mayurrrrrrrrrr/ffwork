@@ -15,7 +15,7 @@
             <div class="d-flex align-items-center mb-2">
                 <h2 class="mb-0 me-3">{{ task.title }}</h2>
                 <span class="badge rounded-pill 
-                    {% if task.status == 'done' %}bg-success
+                    {% if task.status  ==  'done' %}bg-success
                     {% elif task.status == 'in_progress' %}bg-primary
                     {% elif task.status == 'review' %}bg-info
                     {% else %}bg-secondary
@@ -72,7 +72,7 @@
                         <div class="col-md-4">
                             <h6 class="text-muted text-uppercase small">Priority</h6>
                             <span class="badge rounded-pill 
-                                {% if task.priority == 'urgent' %}bg-danger
+                                {% if task.priority  ==  'urgent' %}bg-danger
                                 {% elif task.priority == 'high' %}bg-warning text-dark
                                 {% elif task.priority == 'medium' %}bg-info text-dark
                                 {% else %}bg-secondary

@@ -18,7 +18,7 @@
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
-            <a class="nav-link {% if current_view == 'my' %}active{% endif %}" href="?view=my">
+            <a class="nav-link {% if current_view  ==  'my' %}active{% endif %}" href="?view=my">
                 My Expenses
                 {% if my_pending_count > 0 %}
                 <span class="badge bg-secondary rounded-pill ms-1">{{ my_pending_count }}</span>
@@ -26,7 +26,7 @@
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if current_view == 'approve' %}active{% endif %}" href="?view=approve">
+            <a class="nav-link {% if current_view  ==  'approve' %}active{% endif %}" href="?view=approve">
                 To Approve
                 {% if approval_count > 0 %}
                 <span class="badge bg-danger rounded-pill ms-1">{{ approval_count }}</span>
@@ -35,7 +35,7 @@
         </li>
         {% if user.roles.exists %} <!-- Simplified check, refine for managers -->
         <li class="nav-item">
-            <a class="nav-link {% if current_view == 'team' %}active{% endif %}" href="?view=team">Team Expenses</a>
+            <a class="nav-link {% if current_view  ==  'team' %}active{% endif %}" href="?view=team">Team Expenses</a>
         </li>
         {% endif %}
     </ul>
@@ -71,7 +71,7 @@
                             </td>
                             <td>
                                 <span class="badge rounded-pill 
-                                    {% if report.status == 'draft' %}bg-secondary
+                                    {% if report.status  ==  'draft' %}bg-secondary
                                     {% elif report.status == 'submitted' %}bg-info text-dark
                                     {% elif report.status == 'approved' %}bg-success
                                     {% elif report.status == 'rejected' %}bg-danger
@@ -101,7 +101,7 @@
             <div class="text-center py-5">
                 <i data-lucide="file-text" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
                 <p class="text-muted">No expense reports found.</p>
-                {% if current_view == 'my' %}
+                {% if current_view  ==  'my' %}
                 <a href="{% url 'expenses:create' %}" class="btn btn-outline-primary btn-sm">Create your first
                     report</a>
                 {% endif %}

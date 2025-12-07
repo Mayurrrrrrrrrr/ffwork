@@ -24,7 +24,7 @@
                 <div class="card-body p-4">
                     <h2 class="mb-4">{{ lesson.title }}</h2>
 
-                    {% if lesson.content_type == 'video' %}
+                    {% if lesson.content_type  ==  'video' %}
                     <div class="ratio ratio-16x9 mb-4 bg-dark rounded">
                         {% if lesson.video_url %}
                         <iframe src="{{ lesson.video_url }}" title="Video player" allowfullscreen></iframe>
@@ -84,9 +84,9 @@
                     <div class="list-group-item bg-light fw-bold">{{ mod.title }}</div>
                     {% for l in mod.lessons.all %}
                     <a href="{% url 'learning:lesson' l.pk %}"
-                        class="list-group-item list-group-item-action {% if l == lesson %}active{% endif %}">
+                        class="list-group-item list-group-item-action {% if l  ==  lesson %}active{% endif %}">
                         <div class="d-flex align-items-center">
-                            <i data-lucide="{% if l.content_type == 'video' %}play-circle{% else %}file-text{% endif %}"
+                            <i data-lucide="{% if l.content_type  ==  'video' %}play-circle{% else %}file-text{% endif %}"
                                 style="width:14px;height:14px;" class="me-2 opacity-75"></i>
                             <span class="text-truncate">{{ l.title }}</span>
                         </div>

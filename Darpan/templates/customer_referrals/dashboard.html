@@ -80,7 +80,7 @@
                                 <td><span class="badge bg-light text-dark border">{{ referral.referral_code }}</span>
                                 </td>
                                 <td>
-                                    {% if referral.status == 'Converted' %}
+                                    {% if referral.status  ==  'Converted' %}
                                     <span class="badge bg-success">Converted</span>
                                     {% elif referral.status == 'Rejected' %}
                                     <span class="badge bg-danger">Rejected</span>

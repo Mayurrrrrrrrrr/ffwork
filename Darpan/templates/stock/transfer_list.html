@@ -23,12 +23,12 @@
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
-            <a class="nav-link {% if current_view == 'my' %}active{% endif %}" href="?view=my">
+            <a class="nav-link {% if current_view  ==  'my' %}active{% endif %}" href="?view=my">
                 My Requests
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if current_view == 'approve' %}active{% endif %}" href="?view=approve">
+            <a class="nav-link {% if current_view  ==  'approve' %}active{% endif %}" href="?view=approve">
                 To Approve
                 {% if approve_count > 0 %}
                 <span class="badge bg-danger rounded-pill ms-1">{{ approve_count }}</span>
@@ -36,7 +36,7 @@
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if current_view == 'receive' %}active{% endif %}" href="?view=receive">
+            <a class="nav-link {% if current_view  ==  'receive' %}active{% endif %}" href="?view=receive">
                 To Receive
                 {% if receive_count > 0 %}
                 <span class="badge bg-warning text-dark rounded-pill ms-1">{{ receive_count }}</span>
@@ -78,7 +78,7 @@
                             <td>{{ iso.request_date|date:"M j" }}</td>
                             <td>
                                 <span class="badge rounded-pill 
-                                    {% if iso.status == 'draft' %}bg-secondary
+                                    {% if iso.status  ==  'draft' %}bg-secondary
                                     {% elif iso.status == 'requested' %}bg-warning text-dark
                                     {% elif iso.status == 'approved' %}bg-info text-dark
                                     {% elif iso.status == 'shipped' %}bg-primary
@@ -103,7 +103,7 @@
             <div class="text-center py-5">
                 <i data-lucide="truck" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
                 <p class="text-muted">No transfers found.</p>
-                {% if current_view == 'my' %}
+                {% if current_view  ==  'my' %}
                 <a href="{% url 'stock:transfer_create' %}" class="btn btn-outline-primary btn-sm">Create request</a>
                 {% endif %}
             </div>

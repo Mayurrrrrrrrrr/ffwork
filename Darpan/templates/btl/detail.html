@@ -19,7 +19,7 @@
         </div>
         <div class="text-end">
             <span class="badge rounded-pill px-3 py-2 mb-2 fs-6
-                {% if proposal.status == 'draft' %}bg-secondary
+                {% if proposal.status  ==  'draft' %}bg-secondary
                 {% elif proposal.status == 'submitted' %}bg-info text-dark
                 {% elif proposal.status == 'approved' %}bg-success
                 {% elif proposal.status == 'rejected' %}bg-danger
@@ -61,7 +61,7 @@
             <div class="card mb-4">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Activity Images</h5>
-                    {% if proposal.user == user %}
+                    {% if proposal.user  ==  user %}
                     <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse"
                         data-bs-target="#uploadForm">
                         <i data-lucide="upload" style="width:14px;height:14px;"></i> Upload
@@ -123,7 +123,7 @@
             {% endif %}
 
             <!-- Rejection Reason -->
-            {% if proposal.status == 'rejected' and proposal.rejection_reason %}
+            {% if proposal.status  ==  'rejected' and proposal.rejection_reason %}
             <div class="alert alert-danger">
                 <strong>Rejection Reason:</strong> {{ proposal.rejection_reason }}
             </div>
@@ -137,7 +137,7 @@
                 <div class="card-body">
                     <h5 class="card-title mb-3">Actions</h5>
                     <div class="d-grid gap-2">
-                        {% if proposal.status == 'draft' and proposal.user == user %}
+                        {% if proposal.status == 'draft' and proposal.user  ==  user %}
                         <a href="{% url 'btl:edit' proposal.pk %}" class="btn btn-outline-primary">
                             <i data-lucide="edit-2" class="me-2"></i> Edit Proposal
                         </a>

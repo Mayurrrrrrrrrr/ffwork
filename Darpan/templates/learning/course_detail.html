@@ -23,7 +23,7 @@
                         <div class="d-flex align-items-center mb-2">
                             <h3 class="mb-0 me-2">{{ progress.progress_percent }}%</h3>
                             <span
-                                class="badge {% if progress.status == 'completed' %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                class="badge {% if progress.status  ==  'completed' %}bg-success{% else %}bg-warning text-dark{% endif %}">
                                 {{ progress.get_status_display }}
                             </span>
                         </div>
@@ -74,7 +74,7 @@
                                         <div class="d-flex align-items-center">
                                             <span class="me-2">{{ lesson.title }}</span>
                                             <span class="badge bg-light text-secondary border">
-                                                {% if lesson.content_type == 'video' %}
+                                                {% if lesson.content_type  ==  'video' %}
                                                 <i data-lucide="play-circle" style="width:12px;height:12px;"
                                                     class="me-1"></i> Video
                                                 {% elif lesson.content_type == 'text' %}

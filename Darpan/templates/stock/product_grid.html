@@ -291,15 +291,15 @@
                 </div>
                 <div>
                     <select class="form-select" name="sort" @change="applySort($event.target.value)">
-                        <option value="-trending_score" {% if current_filters.sort=='-trending_score' %}selected{% endif
+                        <option value="-trending_score" {% if current_filters.sort == '-trending_score' %}selected{% endif
                             %}>Trending</option>
-                        <option value="name" {% if current_filters.sort=='name' %}selected{% endif %}>Name (A-Z)
+                        <option value="name" {% if current_filters.sort == 'name' %}selected{% endif %}>Name (A-Z)
                         </option>
-                        <option value="-sale_price" {% if current_filters.sort=='-sale_price' %}selected{% endif %}>
+                        <option value="-sale_price" {% if current_filters.sort == '-sale_price' %}selected{% endif %}>
                             Price (High to Low)</option>
-                        <option value="sale_price" {% if current_filters.sort=='sale_price' %}selected{% endif %}>Price
+                        <option value="sale_price" {% if current_filters.sort == 'sale_price' %}selected{% endif %}>Price
                             (Low to High)</option>
-                        <option value="-created_at" {% if current_filters.sort=='-created_at' %}selected{% endif %}>
+                        <option value="-created_at" {% if current_filters.sort == '-created_at' %}selected{% endif %}>
                             Newest First</option>
                     </select>
                 </div>

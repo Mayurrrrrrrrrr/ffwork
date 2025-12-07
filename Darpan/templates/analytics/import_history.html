@@ -33,7 +33,7 @@
                     <tr>
                         <td>
                             <span
-                                class="badge bg-{% if log.file_type == 'sales' %}primary{% elif log.file_type == 'stock' %}success{% else %}secondary{% endif %}">
+                                class="badge bg-{% if log.file_type  ==  'sales' %}primary{% elif log.file_type == 'stock' %}success{% else %}secondary{% endif %}">
                                 {{ log.get_file_type_display }}
                             </span>
                         </td>

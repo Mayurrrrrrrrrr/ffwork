@@ -63,7 +63,7 @@
                                     <td>{{ backup.company.name|default:"All" }}</td>
                                     <td>{{ backup.module.name|default:"All Modules" }}</td>
                                     <td>
-                                        {% if backup.status == 'completed' %}
+                                        {% if backup.status  ==  'completed' %}
                                         <span class="badge bg-success">Completed</span>
                                         {% elif backup.status == 'processing' %}
                                         <span class="badge bg-warning">Processing</span>
@@ -82,7 +82,7 @@
                                     </td>
                                     <td>{{ backup.created_at|date:"M d, H:i" }}</td>
                                     <td>
-                                        {% if backup.status == 'completed' %}
+                                        {% if backup.status  ==  'completed' %}
                                         <a href="{% url 'admin_portal:backup_download' pk=backup.pk %}"
                                             class="btn btn-sm btn-outline-primary">
                                             <i data-lucide="download" style="width:14px;height:14px;"></i>

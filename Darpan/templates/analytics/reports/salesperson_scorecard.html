@@ -69,7 +69,7 @@
                         {% for s in salesperson_stats %}
                         <tr {% if s.rank <=3 %}class="table-success" {% endif %}>
                             <td>
-                                {% if s.rank == 1 %}🥇{% elif s.rank == 2 %}🥈{% elif s.rank == 3 %}🥉{% else %}{{
+                                {% if s.rank  ==  1 %}🥇{% elif s.rank == 2 %}🥈{% elif s.rank == 3 %}🥉{% else %}{{
                                 s.rank }}{% endif %}
                             </td>
                             <td><strong>{{ s.sales_person }}</strong></td>

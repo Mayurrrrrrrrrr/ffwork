@@ -47,7 +47,7 @@
                     </div>
 
                     <a href="{% url 'learning:course_detail' course.pk %}" class="btn btn-outline-primary mt-3 w-100">
-                        {% if progress.status == 'not_started' or not progress %}Start Course{% else %}Continue
+                        {% if progress.status  ==  'not_started' or not progress %}Start Course{% else %}Continue
                         Learning{% endif %}
                     </a>
                     {% endwith %}

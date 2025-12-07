@@ -20,7 +20,7 @@
         </div>
         <div class="text-end">
             <span class="badge rounded-pill px-3 py-2 fs-6
-                {% if transfer.status == 'draft' %}bg-secondary
+                {% if transfer.status  ==  'draft' %}bg-secondary
                 {% elif transfer.status == 'requested' %}bg-warning text-dark
                 {% elif transfer.status == 'approved' %}bg-info text-dark
                 {% elif transfer.status == 'shipped' %}bg-primary
@@ -64,7 +64,7 @@
                     <h5 class="mb-0">Items</h5>
                 </div>
 
-                {% if transfer.status == 'shipped' and receive_formset %}
+                {% if transfer.status  ==  'shipped' and receive_formset %}
                 <!-- Receiving Form -->
                 <div class="card-body">
                     <form method="post" action="{% url 'stock:transfer_action' transfer.pk %}">
@@ -124,11 +124,11 @@
                                 </td>
                                 <td class="text-center">{{ item.quantity_requested }}</td>
                                 <td class="text-center">
-                                    {% if transfer.status == 'draft' or transfer.status == 'requested' %}-{% else %}{{
+                                    {% if transfer.status == 'draft' or transfer.status  ==  'requested' %}-{% else %}{{
                                     item.quantity_shipped }}{% endif %}
                                 </td>
                                 <td class="text-center pe-4">
-                                    {% if transfer.status == 'received' %}{{ item.quantity_received }}{% else %}-{%
+                                    {% if transfer.status  ==  'received' %}{{ item.quantity_received }}{% else %}-{%
                                     endif %}
                                 </td>
                             </tr>
@@ -147,7 +147,7 @@
                 <div class="card-body">
                     <h5 class="card-title mb-3">Actions</h5>
                     <div class="d-grid gap-2">
-                        {% if transfer.status == 'draft' %}
+                        {% if transfer.status  ==  'draft' %}
                         <form method="post" action="{% url 'stock:transfer_action' transfer.pk %}" class="d-grid">
                             {% csrf_token %}
                             <button type="submit" name="action" value="submit" class="btn btn-success">
@@ -156,7 +156,7 @@
                         </form>
                         {% endif %}
 
-                        {% if transfer.status == 'requested' %}
+                        {% if transfer.status  ==  'requested' %}
                         <form method="post" action="{% url 'stock:transfer_action' transfer.pk %}" class="d-grid">
                             {% csrf_token %}
                             <button type="submit" name="action" value="approve" class="btn btn-primary">
@@ -165,7 +165,7 @@
                         </form>
                         {% endif %}
 
-                        {% if transfer.status == 'approved' %}
+                        {% if transfer.status  ==  'approved' %}
                         <form method="post" action="{% url 'stock:transfer_action' transfer.pk %}" class="d-grid">
                             {% csrf_token %}
                             <button type="submit" name="action" value="ship" class="btn btn-primary">

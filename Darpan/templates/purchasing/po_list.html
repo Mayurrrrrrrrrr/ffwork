@@ -23,12 +23,12 @@
     <!-- Tabs -->
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
-            <a class="nav-link {% if current_view == 'my' %}active{% endif %}" href="?view=my">
+            <a class="nav-link {% if current_view  ==  'my' %}active{% endif %}" href="?view=my">
                 My Orders
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {% if current_view == 'approve' %}active{% endif %}" href="?view=approve">
+            <a class="nav-link {% if current_view  ==  'approve' %}active{% endif %}" href="?view=approve">
                 To Approve
                 {% if approval_count > 0 %}
                 <span class="badge bg-danger rounded-pill ms-1">{{ approval_count }}</span>
@@ -62,7 +62,7 @@
                             <td class="fw-bold">₹{{ po.total_amount }}</td>
                             <td>
                                 <span class="badge rounded-pill 
-                                    {% if po.status == 'draft' %}bg-secondary
+                                    {% if po.status  ==  'draft' %}bg-secondary
                                     {% elif po.status == 'pending' %}bg-warning text-dark
                                     {% elif po.status == 'approved' %}bg-info text-dark
                                     {% elif po.status == 'issued' %}bg-primary
@@ -87,7 +87,7 @@
             <div class="text-center py-5">
                 <i data-lucide="shopping-cart" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
                 <p class="text-muted">No purchase orders found.</p>
-                {% if current_view == 'my' %}
+                {% if current_view  ==  'my' %}
                 <a href="{% url 'purchasing:po_create' %}" class="btn btn-outline-primary btn-sm">Create your first
                     PO</a>
                 {% endif %}

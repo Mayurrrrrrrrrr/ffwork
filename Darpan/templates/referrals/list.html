@@ -44,7 +44,7 @@
                             <td>{{ candidate.created_at|date:"M j, Y" }}</td>
                             <td>
                                 <span class="badge rounded-pill 
-                                    {% if candidate.status == 'submitted' %}bg-secondary
+                                    {% if candidate.status  ==  'submitted' %}bg-secondary
                                     {% elif candidate.status == 'under_review' %}bg-warning text-dark
                                     {% elif candidate.status == 'interview' %}bg-info text-dark
                                     {% elif candidate.status == 'hired' %}bg-success

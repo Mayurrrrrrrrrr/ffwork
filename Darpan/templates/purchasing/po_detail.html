@@ -19,7 +19,7 @@
         </div>
         <div class="text-end">
             <span class="badge rounded-pill px-3 py-2 mb-2 fs-6
-                {% if po.status == 'draft' %}bg-secondary
+                {% if po.status  ==  'draft' %}bg-secondary
                 {% elif po.status == 'pending' %}bg-warning text-dark
                 {% elif po.status == 'approved' %}bg-info text-dark
                 {% elif po.status == 'issued' %}bg-primary
@@ -121,7 +121,7 @@
             {% endif %}
 
             <!-- Rejection Reason -->
-            {% if po.status == 'rejected' and po.rejection_reason %}
+            {% if po.status  ==  'rejected' and po.rejection_reason %}
             <div class="alert alert-danger">
                 <strong>Rejection Reason:</strong> {{ po.rejection_reason }}
             </div>
@@ -135,7 +135,7 @@
                 <div class="card-body">
                     <h5 class="card-title mb-3">Actions</h5>
                     <div class="d-grid gap-2">
-                        {% if po.status == 'draft' and po.user == user %}
+                        {% if po.status == 'draft' and po.user  ==  user %}
                         <form method="post" action="{% url 'purchasing:po_submit' po.pk %}" class="d-grid">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-success"
