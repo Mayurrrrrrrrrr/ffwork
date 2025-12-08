@@ -151,7 +151,7 @@
 });
     new Chart(document.getElementById('trendChart'), {
         type: 'line',
-        data: { labels: {{ trend_labels| safe |default: "[]" }}, datasets: [{ label: 'Revenue', data: {{ trend_values| safe |default: "[]" }}, borderColor: '#667eea', fill: true, backgroundColor: 'rgba(102,126,234,0.1)' }] }
+        data: { labels: {{ trend_labels| safe }}, datasets: [{ label: 'Revenue', data: {{ trend_values| safe }}, borderColor: '#667eea', fill: true, backgroundColor: 'rgba(102,126,234,0.1)' }] }
 });
 </script>
 {% endblock %}

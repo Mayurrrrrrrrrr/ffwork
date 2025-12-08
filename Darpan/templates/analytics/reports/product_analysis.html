@@ -135,7 +135,7 @@
 <script>
     new Chart(document.getElementById('categoryChart'), {
         type: 'doughnut',
-        data: { labels: {{ category_labels| safe |default: "[]" }}, datasets: [{ data: {{ category_values| safe |default: "[]" }}, backgroundColor: ['#667eea', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6c757d', '#fd7e14', '#20c997'] }] },
+        data: { labels: {{ category_labels| safe }}, datasets: [{ data: {{ category_values| safe }}, backgroundColor: ['#667eea', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6c757d', '#fd7e14', '#20c997'] }] },
         options: { responsive: true }
 });
 </script>

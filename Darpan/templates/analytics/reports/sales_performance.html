@@ -115,12 +115,12 @@
 <script>
     new Chart(document.getElementById('storeChart'), {
         type: 'bar',
-        data: { labels: {{ store_labels| safe |default: "[]" }}, datasets: [{ label: 'Revenue', data: {{ store_values| safe |default: "[]" }}, backgroundColor: 'rgba(102, 126, 234, 0.8)' }] },
+        data: { labels: {{ store_labels| safe }}, datasets: [{ label: 'Revenue', data: {{ store_values| safe }}, backgroundColor: 'rgba(102, 126, 234, 0.8)' }] },
         options: { responsive: true, plugins: { legend: { display: false } } }
 });
     new Chart(document.getElementById('trendChart'), {
         type: 'line',
-        data: { labels: {{ trend_labels| safe |default: "[]" }}, datasets: [{ label: 'Revenue', data: {{ trend_values| safe |default: "[]" }}, borderColor: '#667eea', fill: true, backgroundColor: 'rgba(102,126,234,0.1)' }] },
+        data: { labels: {{ trend_labels| safe }}, datasets: [{ label: 'Revenue', data: {{ trend_values| safe }}, borderColor: '#667eea', fill: true, backgroundColor: 'rgba(102,126,234,0.1)' }] },
         options: { responsive: true }
 });
 </script>

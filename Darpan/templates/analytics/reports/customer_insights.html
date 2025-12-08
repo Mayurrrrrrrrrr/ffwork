@@ -47,7 +47,7 @@
         </div>
     </div>
 
-    {% if total_contacts  ==  0 %}
+    {% if total_contacts == 0 %}
     <div class="alert alert-warning text-center py-5">
         <h5>No CRM Data Found</h5>
         <p class="text-muted">Import CRM contacts to see customer insights.</p>
@@ -193,7 +193,7 @@
     {% if total_contacts > 0 %}
     new Chart(document.getElementById('leadChart'), {
         type: 'pie',
-        data: { labels: {{ lead_labels| safe |default: "[]" }}, datasets: [{ data: {{ lead_values| safe |default: "[]" }}, backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#dc3545', '#6c757d', '#007bff', '#fd7e14'] }] },
+        data: { labels: {{ lead_labels| safe }}, datasets: [{ data: {{ lead_values| safe }}, backgroundColor: ['#28a745', '#ffc107', '#17a2b8', '#dc3545', '#6c757d', '#007bff', '#fd7e14'] }] },
         options: { responsive: true }
 });
     {% endif %}

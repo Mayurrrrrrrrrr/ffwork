@@ -16,7 +16,7 @@
 
     {% include "analytics/reports/_filters.html" %}
 
-    {% if total_qty  ==  0 %}
+    {% if total_qty == 0 %}
     <div class="alert alert-warning text-center py-5">
         <h5>No Stock Data Found</h5>
         <p class="text-muted">Import stock data to see summary.</p>
@@ -144,7 +144,7 @@
     {% if total_qty > 0 %}
     new Chart(document.getElementById('locationChart'), {
         type: 'bar',
-        data: { labels: {{ location_labels| safe |default: "[]" }}, datasets: [{ label: 'Value', data: {{ location_values| safe |default: "[]" }}, backgroundColor: 'rgba(102,126,234,0.8)' }] },
+        data: { labels: {{ location_labels| safe }}, datasets: [{ label: 'Value', data: {{ location_values| safe }}, backgroundColor: 'rgba(102,126,234,0.8)' }] },
         options: { responsive: true, plugins: { legend: { display: false } } }
 });
     {% endif %}
