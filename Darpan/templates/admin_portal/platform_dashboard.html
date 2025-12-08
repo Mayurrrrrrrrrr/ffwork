@@ -36,6 +36,9 @@
                     <a href="{% url 'admin_portal:company_list' %}" class="btn btn-outline-primary btn-sm">
                         <i data-lucide="building" class="me-1" style="width: 14px;"></i> View All Companies
                     </a>
+                    <a href="{% url 'admin_portal:data_backup' %}" class="btn btn-outline-success btn-sm mt-2">
+                        <i data-lucide="database" class="me-1" style="width: 14px;"></i> Data Backup
+                    </a>
                 </div>
             </div>
         </div>
@@ -85,9 +88,17 @@
                                 class="btn btn-sm btn-outline-success me-1" title="Create Admin">
                                 <i data-lucide="user-plus" style="width: 16px;"></i>
                             </a>
+                            <a href="{% url 'admin_portal:company_modules' company.pk %}"
+                                class="btn btn-sm btn-outline-info me-1" title="Manage Modules">
+                                <i data-lucide="grid" style="width: 16px;"></i>
+                            </a>
                             <a href="{% url 'admin_portal:company_update' company.pk %}"
                                 class="btn btn-sm btn-outline-primary" title="Edit Company">
                                 <i data-lucide="edit-2" style="width: 16px;"></i>
+                            </a>
+                            <a href="{% url 'admin_portal:company_delete' company.pk %}"
+                                class="btn btn-sm btn-outline-danger" title="Delete Company">
+                                <i data-lucide="trash-2" style="width: 16px;"></i>
                             </a>
                         </td>
                     </tr>
