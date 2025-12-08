@@ -155,11 +155,16 @@ class SalesPerformanceReport(LoginRequiredMixin, ReportAccessMixin, TemplateView
         
         # By Salesperson
         sales_person_data = sales_qs.exclude(sales_person='').values('sales_person').annotate(
-            revenue=Sum('revenue'),
+            total_revenue=Sum('revenue'),
             count=Count('id'),
-            avg_value=Avg('revenue')
-        ).order_by('-revenue')[:15]
-        context['salesperson_data'] = list(sales_person_data)
+        ).order_by('-total_revenue')[:15]
+        # Calculate avg_value in Python to avoid aggregate collision
+        salesperson_list = []
+        for sp in sales_person_data:
+            sp['revenue'] = sp['total_revenue']
+            sp['avg_value'] = sp['total_revenue'] / sp['count'] if sp['count'] > 0 else 0
+            salesperson_list.append(sp)
+        context['salesperson_data'] = salesperson_list
         
         # Daily Trend
         daily_data = sales_qs.values('transaction_date').annotate(
@@ -635,7 +640,6 @@ class SalespersonScorecardReport(LoginRequiredMixin, ReportAccessMixin, Template
             transactions=Count('id'),
             items=Sum('quantity'),
             margin=Sum('gross_margin'),
-            avg_value=Avg('revenue'),
             avg_discount=Avg('discount_percentage')
         ).order_by('-revenue'))
         
@@ -644,6 +648,7 @@ class SalespersonScorecardReport(LoginRequiredMixin, ReportAccessMixin, Template
         for i, s in enumerate(salesperson_stats):
             s['rank'] = i + 1
             s['contribution'] = round((s['revenue'] or 0) / max(total_revenue, 1) * 100, 1)
+            s['avg_value'] = (s['revenue'] or 0) / max(s['transactions'], 1)  # Calculate avg_value in Python
         
         context['salesperson_stats'] = salesperson_stats
         context['total_salespersons'] = len(salesperson_stats)
