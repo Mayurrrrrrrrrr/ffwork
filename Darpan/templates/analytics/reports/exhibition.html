@@ -146,7 +146,7 @@
         type: 'doughnut',
         data: {
             labels: ['Exhibition', 'Regular'],
-            datasets: [{ data: [{{ exhibition_revenue|default: 0 }}, {{ regular_revenue|default: 0 }}], backgroundColor: ['#667eea', '#28a745'] }] 
+            datasets: [{ data: [{{ exhibition_revenue|default:0 }}, {{ regular_revenue|default:0 }}], backgroundColor: ['#667eea', '#28a745'] }] 
     }
 });
     new Chart(document.getElementById('trendChart'), {
