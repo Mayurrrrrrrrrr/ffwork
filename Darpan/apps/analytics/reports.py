@@ -3,6 +3,8 @@ Report views for Analytics module.
 Provides intelligent reports with filters: Sales, Products, Customers, Stock, Sell-Through, Combined Insights.
 """
 
+import logging
+from decimal import Decimal
 from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Sum, Count, Avg, Max, Min, F, Q
@@ -13,6 +15,19 @@ from collections import defaultdict
 import json
 
 from .models import SalesRecord, StockSnapshot, CRMContact, ImportLog
+from apps.core.utils import safe_decimal, safe_divide, safe_float
+
+logger = logging.getLogger(__name__)
+
+
+def safe_json(data, default='[]'):
+    """Safely convert data to JSON string."""
+    try:
+        if data is None:
+            return default
+        return json.dumps(data)
+    except (TypeError, ValueError):
+        return default
 
 
 class ReportAccessMixin(UserPassesTestMixin):
@@ -129,56 +144,74 @@ class SalesPerformanceReport(LoginRequiredMixin, ReportAccessMixin, TemplateView
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        company = get_company(self.request.user)
-        
-        context['filters'] = get_filter_options(company)
-        context['current_filters'] = self.request.GET
-        
-        sales_qs = SalesRecord.objects.filter(company=company, transaction_type='sale') if company else SalesRecord.objects.none()
-        sales_qs = apply_filters(sales_qs, self.request)
-        
-        # Overall KPIs
-        context['total_revenue'] = sales_qs.aggregate(total=Sum('revenue'))['total'] or 0
-        context['total_transactions'] = sales_qs.count()
-        context['avg_order_value'] = context['total_revenue'] / max(context['total_transactions'], 1)
-        context['total_margin'] = sales_qs.aggregate(total=Sum('gross_margin'))['total'] or 0
-        
-        # By Store/Location
-        store_data = sales_qs.values('region').annotate(
-            revenue=Sum('revenue'),
-            count=Count('id'),
-            margin=Sum('gross_margin')
-        ).order_by('-revenue')[:15]
-        context['store_data'] = list(store_data)
-        context['store_labels'] = json.dumps([s['region'] or 'Unknown' for s in store_data])
-        context['store_values'] = json.dumps([float(s['revenue'] or 0) for s in store_data])
-        
-        # By Salesperson
-        sales_person_data = sales_qs.exclude(sales_person='').values('sales_person').annotate(
-            total_revenue=Sum('revenue'),
-            count=Count('id'),
-        ).order_by('-total_revenue')[:15]
-        # Calculate avg_value in Python to avoid aggregate collision
-        salesperson_list = []
-        for sp in sales_person_data:
-            sp['revenue'] = sp['total_revenue']
-            sp['avg_value'] = sp['total_revenue'] / sp['count'] if sp['count'] > 0 else 0
-            salesperson_list.append(sp)
-        context['salesperson_data'] = salesperson_list
-        
-        # Daily Trend
-        daily_data = sales_qs.values('transaction_date').annotate(
-            total=Sum('revenue')
-        ).order_by('transaction_date')
-        
-        daily_totals = defaultdict(float)
-        for item in daily_data:
-            if item['transaction_date']:
-                daily_totals[item['transaction_date']] = float(item['total'] or 0)
-        
-        sorted_days = sorted(daily_totals.keys())[-60:]  # Last 60 days max
-        context['trend_labels'] = json.dumps([d.strftime('%d %b') for d in sorted_days])
-        context['trend_values'] = json.dumps([daily_totals[d] for d in sorted_days])
+        try:
+            company = get_company(self.request.user)
+            
+            context['filters'] = get_filter_options(company)
+            context['current_filters'] = self.request.GET
+            
+            sales_qs = SalesRecord.objects.filter(company=company, transaction_type='sale') if company else SalesRecord.objects.none()
+            sales_qs = apply_filters(sales_qs, self.request)
+            
+            # Overall KPIs with safe defaults
+            context['total_revenue'] = safe_float(sales_qs.aggregate(total=Sum('revenue'))['total'], 0)
+            context['total_transactions'] = sales_qs.count() or 0
+            context['avg_order_value'] = safe_float(safe_divide(context['total_revenue'], context['total_transactions']), 0)
+            context['total_margin'] = safe_float(sales_qs.aggregate(total=Sum('gross_margin'))['total'], 0)
+            
+            # By Store/Location
+            store_data = list(sales_qs.values('region').annotate(
+                revenue=Sum('revenue'),
+                count=Count('id'),
+                margin=Sum('gross_margin')
+            ).order_by('-revenue')[:15])
+            context['store_data'] = store_data
+            context['store_labels'] = safe_json([s['region'] or 'Unknown' for s in store_data] if store_data else [])
+            context['store_values'] = safe_json([safe_float(s['revenue'], 0) for s in store_data] if store_data else [])
+            
+            # By Salesperson
+            sales_person_data = sales_qs.exclude(sales_person='').values('sales_person').annotate(
+                total_revenue=Sum('revenue'),
+                count=Count('id'),
+            ).order_by('-total_revenue')[:15]
+            # Calculate avg_value in Python to avoid aggregate collision
+            salesperson_list = []
+            for sp in sales_person_data:
+                sp['revenue'] = safe_float(sp['total_revenue'], 0)
+                sp['avg_value'] = safe_float(safe_divide(sp['total_revenue'], sp['count']), 0)
+                salesperson_list.append(sp)
+            context['salesperson_data'] = salesperson_list
+            
+            # Daily Trend
+            daily_data = sales_qs.values('transaction_date').annotate(
+                total=Sum('revenue')
+            ).order_by('transaction_date')
+            
+            daily_totals = defaultdict(float)
+            for item in daily_data:
+                if item['transaction_date']:
+                    daily_totals[item['transaction_date']] = safe_float(item['total'], 0)
+            
+            sorted_days = sorted(daily_totals.keys())[-60:]  # Last 60 days max
+            context['trend_labels'] = safe_json([d.strftime('%d %b') for d in sorted_days] if sorted_days else [])
+            context['trend_values'] = safe_json([daily_totals[d] for d in sorted_days] if sorted_days else [])
+            
+        except Exception as e:
+            logger.exception("SalesPerformanceReport failed")
+            # Provide safe defaults on error
+            context.setdefault('total_revenue', 0)
+            context.setdefault('total_transactions', 0)
+            context.setdefault('avg_order_value', 0)
+            context.setdefault('total_margin', 0)
+            context.setdefault('store_data', [])
+            context.setdefault('store_labels', '[]')
+            context.setdefault('store_values', '[]')
+            context.setdefault('salesperson_data', [])
+            context.setdefault('trend_labels', '[]')
+            context.setdefault('trend_values', '[]')
+            context.setdefault('filters', {})
+            context.setdefault('current_filters', {})
+            context['error'] = str(e)
         
         return context
 
@@ -189,43 +222,57 @@ class ProductAnalysisReport(LoginRequiredMixin, ReportAccessMixin, TemplateView)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        company = get_company(self.request.user)
-        
-        context['filters'] = get_filter_options(company)
-        context['current_filters'] = self.request.GET
-        
-        sales_qs = SalesRecord.objects.filter(company=company, transaction_type='sale') if company else SalesRecord.objects.none()
-        sales_qs = apply_filters(sales_qs, self.request)
-        
-        # Top 20 products by revenue
-        top_products = sales_qs.values('style_code', 'product_category', 'collection').annotate(
-            revenue=Sum('revenue'),
-            qty=Sum('quantity'),
-            margin=Sum('gross_margin'),
-            avg_discount=Avg('discount_percentage')
-        ).order_by('-revenue')[:20]
-        context['top_products'] = list(top_products)
-        
-        # Category performance
-        category_data = sales_qs.values('product_category').annotate(
-            revenue=Sum('revenue'),
-            count=Count('id'),
-            margin=Sum('gross_margin')
-        ).order_by('-revenue')[:10]
-        context['category_data'] = list(category_data)
-        context['category_labels'] = json.dumps([c['product_category'] or 'Unknown' for c in category_data])
-        context['category_values'] = json.dumps([float(c['revenue'] or 0) for c in category_data])
-        
-        # Collection performance
-        collection_data = sales_qs.exclude(collection='').values('collection').annotate(
-            revenue=Sum('revenue'),
-            count=Count('id')
-        ).order_by('-revenue')[:10]
-        context['collection_data'] = list(collection_data)
-        
-        # Discount impact
-        context['avg_discount'] = sales_qs.aggregate(avg=Avg('discount_percentage'))['avg'] or 0
-        context['total_discount'] = sales_qs.aggregate(total=Sum('discount_amount'))['total'] or 0
+        try:
+            company = get_company(self.request.user)
+            
+            context['filters'] = get_filter_options(company)
+            context['current_filters'] = self.request.GET
+            
+            sales_qs = SalesRecord.objects.filter(company=company, transaction_type='sale') if company else SalesRecord.objects.none()
+            sales_qs = apply_filters(sales_qs, self.request)
+            
+            # Top 20 products by revenue
+            top_products = list(sales_qs.values('style_code', 'product_category', 'collection').annotate(
+                revenue=Sum('revenue'),
+                qty=Sum('quantity'),
+                margin=Sum('gross_margin'),
+                avg_discount=Avg('discount_percentage')
+            ).order_by('-revenue')[:20])
+            context['top_products'] = top_products
+            
+            # Category performance
+            category_data = list(sales_qs.values('product_category').annotate(
+                revenue=Sum('revenue'),
+                count=Count('id'),
+                margin=Sum('gross_margin')
+            ).order_by('-revenue')[:10])
+            context['category_data'] = category_data
+            context['category_labels'] = safe_json([c['product_category'] or 'Unknown' for c in category_data] if category_data else [])
+            context['category_values'] = safe_json([safe_float(c['revenue'], 0) for c in category_data] if category_data else [])
+            
+            # Collection performance
+            collection_data = list(sales_qs.exclude(collection='').values('collection').annotate(
+                revenue=Sum('revenue'),
+                count=Count('id')
+            ).order_by('-revenue')[:10])
+            context['collection_data'] = collection_data
+            
+            # Discount impact
+            context['avg_discount'] = safe_float(sales_qs.aggregate(avg=Avg('discount_percentage'))['avg'], 0)
+            context['total_discount'] = safe_float(sales_qs.aggregate(total=Sum('discount_amount'))['total'], 0)
+            
+        except Exception as e:
+            logger.exception("ProductAnalysisReport failed")
+            context.setdefault('top_products', [])
+            context.setdefault('category_data', [])
+            context.setdefault('category_labels', '[]')
+            context.setdefault('category_values', '[]')
+            context.setdefault('collection_data', [])
+            context.setdefault('avg_discount', 0)
+            context.setdefault('total_discount', 0)
+            context.setdefault('filters', {})
+            context.setdefault('current_filters', {})
+            context['error'] = str(e)
         
         return context
 
@@ -236,98 +283,113 @@ class SellThroughReport(LoginRequiredMixin, ReportAccessMixin, TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        company = get_company(self.request.user)
-        
-        context['filters'] = get_filter_options(company)
-        context['current_filters'] = self.request.GET
-        
-        # Get stock data (with optional date filter)
-        stock_qs = StockSnapshot.objects.filter(company=company) if company else StockSnapshot.objects.none()
-        
-        # Allow selecting stock snapshot date
-        stock_date = self.request.GET.get('stock_date')
-        if stock_date:
-            try:
-                d = datetime.strptime(stock_date, '%Y-%m-%d').date()
-                stock_qs = stock_qs.filter(snapshot_date=d)
-            except:
-                pass
-        
-        if not stock_qs.exists():
-            latest_date = StockSnapshot.objects.filter(company=company).aggregate(Max('snapshot_date'))['snapshot_date__max'] if company else None
-            if latest_date:
-                stock_qs = StockSnapshot.objects.filter(company=company, snapshot_date=latest_date)
-        
-        stock_qs = apply_filters(stock_qs, self.request, is_stock=True)
-        
-        # Get available stock dates for dropdown
-        available_dates = StockSnapshot.objects.filter(company=company).values_list('snapshot_date', flat=True).distinct().order_by('-snapshot_date')[:30] if company else []
-        context['available_stock_dates'] = list(available_dates)
-        
-        # Get sales data
-        sales_qs = SalesRecord.objects.filter(company=company, transaction_type='sale') if company else SalesRecord.objects.none()
-        sales_qs = apply_filters(sales_qs, self.request)
-        
-        # Sell-through by Style Code
-        style_stock = stock_qs.values('style_code').annotate(
-            stock_qty=Sum('quantity'),
-            stock_value=Sum(F('quantity') * F('sale_price'))
-        )
-        style_stock_dict = {s['style_code']: s for s in style_stock}
-        
-        style_sales = sales_qs.values('style_code').annotate(
-            sold_qty=Sum('quantity'),
-            sold_value=Sum('revenue')
-        )
-        
-        sellthrough_data = []
-        for s in style_sales:
-            style_code = s['style_code']
-            stock_info = style_stock_dict.get(style_code, {'stock_qty': 0, 'stock_value': 0})
-            total_qty = (stock_info.get('stock_qty') or 0) + (s['sold_qty'] or 0)
-            sellthrough_pct = (s['sold_qty'] or 0) / max(total_qty, 1) * 100
-            sellthrough_data.append({
-                'style_code': style_code,
-                'sold_qty': s['sold_qty'],
-                'sold_value': s['sold_value'],
-                'stock_qty': stock_info.get('stock_qty', 0),
-                'stock_value': stock_info.get('stock_value', 0),
-                'sellthrough_pct': round(sellthrough_pct, 1)
-            })
-        
-        sellthrough_data.sort(key=lambda x: x['sellthrough_pct'], reverse=True)
-        context['sellthrough_by_style'] = sellthrough_data[:50]
-        
-        # Sell-through by Category
-        cat_stock = stock_qs.values('category').annotate(
-            stock_qty=Sum('quantity'),
-            stock_value=Sum(F('quantity') * F('sale_price'))
-        )
-        cat_stock_dict = {c['category']: c for c in cat_stock}
-        
-        cat_sales = sales_qs.values('product_category').annotate(
-            sold_qty=Sum('quantity'),
-            sold_value=Sum('revenue')
-        )
-        
-        sellthrough_by_cat = []
-        for c in cat_sales:
-            cat = c['product_category']
-            stock_info = cat_stock_dict.get(cat, {'stock_qty': 0, 'stock_value': 0})
-            total_qty = (stock_info.get('stock_qty') or 0) + (c['sold_qty'] or 0)
-            sellthrough_pct = (c['sold_qty'] or 0) / max(total_qty, 1) * 100
-            sellthrough_by_cat.append({
-                'category': cat or 'Unknown',
-                'sold_qty': c['sold_qty'],
-                'sold_value': c['sold_value'],
-                'stock_qty': stock_info.get('stock_qty', 0),
-                'stock_value': stock_info.get('stock_value', 0),
-                'sellthrough_pct': round(sellthrough_pct, 1)
-            })
-        
-        sellthrough_by_cat.sort(key=lambda x: x['sellthrough_pct'], reverse=True)
-        context['sellthrough_by_category'] = sellthrough_by_cat
-        context['snapshot_date'] = stock_qs.first().snapshot_date if stock_qs.exists() else None
+        try:
+            company = get_company(self.request.user)
+            
+            context['filters'] = get_filter_options(company)
+            context['current_filters'] = self.request.GET
+            
+            # Get stock data (with optional date filter)
+            stock_qs = StockSnapshot.objects.filter(company=company) if company else StockSnapshot.objects.none()
+            
+            # Allow selecting stock snapshot date
+            stock_date = self.request.GET.get('stock_date')
+            if stock_date:
+                try:
+                    d = datetime.strptime(stock_date, '%Y-%m-%d').date()
+                    stock_qs = stock_qs.filter(snapshot_date=d)
+                except:
+                    pass
+            
+            if not stock_qs.exists():
+                latest_date = StockSnapshot.objects.filter(company=company).aggregate(Max('snapshot_date'))['snapshot_date__max'] if company else None
+                if latest_date:
+                    stock_qs = StockSnapshot.objects.filter(company=company, snapshot_date=latest_date)
+            
+            stock_qs = apply_filters(stock_qs, self.request, is_stock=True)
+            
+            # Get available stock dates for dropdown
+            available_dates = StockSnapshot.objects.filter(company=company).values_list('snapshot_date', flat=True).distinct().order_by('-snapshot_date')[:30] if company else []
+            context['available_stock_dates'] = list(available_dates)
+            
+            # Get sales data
+            sales_qs = SalesRecord.objects.filter(company=company, transaction_type='sale') if company else SalesRecord.objects.none()
+            sales_qs = apply_filters(sales_qs, self.request)
+            
+            # Sell-through by Style Code
+            style_stock = stock_qs.values('style_code').annotate(
+                stock_qty=Sum('quantity'),
+                stock_value=Sum(F('quantity') * F('sale_price'))
+            )
+            style_stock_dict = {s['style_code']: s for s in style_stock}
+            
+            style_sales = sales_qs.values('style_code').annotate(
+                sold_qty=Sum('quantity'),
+                sold_value=Sum('revenue')
+            )
+            
+            sellthrough_data = []
+            for s in style_sales:
+                style_code = s['style_code']
+                stock_info = style_stock_dict.get(style_code, {'stock_qty': 0, 'stock_value': 0})
+                sold_qty = safe_float(s.get('sold_qty'), 0)
+                stock_qty = safe_float(stock_info.get('stock_qty'), 0)
+                total_qty = stock_qty + sold_qty
+                sellthrough_pct = (sold_qty / max(total_qty, 1)) * 100 if total_qty > 0 else 0
+                sellthrough_data.append({
+                    'style_code': style_code,
+                    'sold_qty': sold_qty,
+                    'sold_value': safe_float(s.get('sold_value'), 0),
+                    'stock_qty': stock_qty,
+                    'stock_value': safe_float(stock_info.get('stock_value'), 0),
+                    'sellthrough_pct': round(sellthrough_pct, 1)
+                })
+            
+            sellthrough_data.sort(key=lambda x: x['sellthrough_pct'], reverse=True)
+            context['sellthrough_by_style'] = sellthrough_data[:50]
+            
+            # Sell-through by Category
+            cat_stock = stock_qs.values('category').annotate(
+                stock_qty=Sum('quantity'),
+                stock_value=Sum(F('quantity') * F('sale_price'))
+            )
+            cat_stock_dict = {c['category']: c for c in cat_stock}
+            
+            cat_sales = sales_qs.values('product_category').annotate(
+                sold_qty=Sum('quantity'),
+                sold_value=Sum('revenue')
+            )
+            
+            sellthrough_by_cat = []
+            for c in cat_sales:
+                cat = c['product_category']
+                stock_info = cat_stock_dict.get(cat, {'stock_qty': 0, 'stock_value': 0})
+                sold_qty = safe_float(c.get('sold_qty'), 0)
+                stock_qty = safe_float(stock_info.get('stock_qty'), 0)
+                total_qty = stock_qty + sold_qty
+                sellthrough_pct = (sold_qty / max(total_qty, 1)) * 100 if total_qty > 0 else 0
+                sellthrough_by_cat.append({
+                    'category': cat or 'Unknown',
+                    'sold_qty': sold_qty,
+                    'sold_value': safe_float(c.get('sold_value'), 0),
+                    'stock_qty': stock_qty,
+                    'stock_value': safe_float(stock_info.get('stock_value'), 0),
+                    'sellthrough_pct': round(sellthrough_pct, 1)
+                })
+            
+            sellthrough_by_cat.sort(key=lambda x: x['sellthrough_pct'], reverse=True)
+            context['sellthrough_by_category'] = sellthrough_by_cat
+            context['snapshot_date'] = stock_qs.first().snapshot_date if stock_qs.exists() else None
+            
+        except Exception as e:
+            logger.exception("SellThroughReport failed")
+            context.setdefault('sellthrough_by_style', [])
+            context.setdefault('sellthrough_by_category', [])
+            context.setdefault('available_stock_dates', [])
+            context.setdefault('snapshot_date', None)
+            context.setdefault('filters', {})
+            context.setdefault('current_filters', {})
+            context['error'] = str(e)
         
         return context
 

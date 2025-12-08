@@ -3,10 +3,43 @@ Utility functions for the Darpan application.
 Helper functions used across multiple modules.
 """
 
+from decimal import Decimal, InvalidOperation
 from django.contrib.auth import get_user_model
 from .models import AuditLog
 
 User = get_user_model()
+
+
+def safe_decimal(value, default=0):
+    """Safely convert to Decimal, returning default on error."""
+    if value is None:
+        return Decimal(str(default))
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError):
+        return Decimal(str(default))
+
+
+def safe_divide(numerator, denominator, default=0):
+    """Safely divide two numbers, returning default on error."""
+    try:
+        num = safe_decimal(numerator)
+        den = safe_decimal(denominator)
+        if den == 0:
+            return Decimal(str(default))
+        return num / den
+    except Exception:
+        return Decimal(str(default))
+
+
+def safe_float(value, default=0.0):
+    """Safely convert to float, returning default on error."""
+    if value is None:
+        return float(default)
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return float(default)
 
 
 def get_current_company_id(request):

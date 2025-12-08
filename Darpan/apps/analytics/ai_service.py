@@ -37,7 +37,14 @@ class GroqAIService:
     @property
     def is_available(self):
         """Check if AI service is properly configured."""
-        return bool(self.api_key and self.client)
+        if not self.api_key:
+            return False
+        try:
+            # Force client initialization
+            _ = self.client
+            return self.client is not None
+        except Exception:
+            return False
     
     def _call_groq(self, system_prompt: str, user_prompt: str) -> str:
         """

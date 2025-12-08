@@ -2,10 +2,13 @@
 Views for Tools module.
 """
 
+import logging
 from django.views.generic import TemplateView, ListView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.db.models import Q, Max
 from apps.analytics.models import StockSnapshot
+
+logger = logging.getLogger(__name__)
 
 
 class ToolsIndexView(LoginRequiredMixin, TemplateView):
@@ -26,126 +29,180 @@ class StockLookupView(LoginRequiredMixin, StockAccessRequiredMixin, ListView):
     paginate_by = 24
 
     def get_queryset(self):
-        company = self.request.user.company
-        if not company:
-            from apps.core.models import Company
-            company = Company.objects.first()
-        
-        if not company:
-            return StockSnapshot.objects.none()
-        
-        queryset = StockSnapshot.objects.filter(company=company)
-        
-        # Get latest snapshot date
-        latest_date = queryset.aggregate(Max('snapshot_date'))['snapshot_date__max']
-        if latest_date:
-            queryset = queryset.filter(snapshot_date=latest_date)
-        
-        # Search Query (Style Code, Jewel Code, Category, Location)
-        query = self.request.GET.get('q')
-        if query:
-            queryset = queryset.filter(
-                Q(style_code__icontains=query) | 
-                Q(jewel_code__icontains=query) |
-                Q(category__icontains=query) |
-                Q(location__icontains=query) |
-                Q(certificate_no__icontains=query)
-            )
+        try:
+            company = self.request.user.company
+            if not company:
+                from apps.core.models import Company
+                company = Company.objects.first()
             
-        # Advanced Filters
-        category = self.request.GET.get('category')
-        if category and category != 'all':
-            queryset = queryset.filter(category=category)
+            if not company:
+                return StockSnapshot.objects.none()
             
-        metal = self.request.GET.get('metal')
-        if metal and metal != 'all':
-            queryset = queryset.filter(base_metal=metal)
+            queryset = StockSnapshot.objects.filter(company=company)
             
-        size = self.request.GET.get('size')
-        if size and size != 'all':
-            queryset = queryset.filter(item_size=size)
+            # Get latest snapshot date
+            latest_date = queryset.aggregate(Max('snapshot_date'))['snapshot_date__max']
+            if latest_date:
+                queryset = queryset.filter(snapshot_date=latest_date)
             
-        location = self.request.GET.get('location')
-        if location and location != 'all':
-            queryset = queryset.filter(location=location)
+            # Search Query - strip and check for actual value
+            query = (self.request.GET.get('q') or '').strip()
+            if query:
+                queryset = queryset.filter(
+                    Q(style_code__icontains=query) | 
+                    Q(jewel_code__icontains=query) |
+                    Q(category__icontains=query) |
+                    Q(location__icontains=query) |
+                    Q(certificate_no__icontains=query)
+                )
+                
+            # Advanced Filters - strip and check for actual value
+            category = (self.request.GET.get('category') or '').strip()
+            if category and category != 'all':
+                queryset = queryset.filter(category=category)
+                
+            metal = (self.request.GET.get('metal') or '').strip()
+            if metal and metal != 'all':
+                queryset = queryset.filter(base_metal=metal)
+                
+            size = (self.request.GET.get('size') or '').strip()
+            if size and size != 'all':
+                queryset = queryset.filter(item_size=size)
+                
+            location = (self.request.GET.get('location') or '').strip()
+            if location and location != 'all':
+                queryset = queryset.filter(location=location)
             
-        price_min = self.request.GET.get('price_min')
-        if price_min:
-            queryset = queryset.filter(sale_price__gte=price_min)
-            
-        price_max = self.request.GET.get('price_max')
-        if price_max:
-            queryset = queryset.filter(sale_price__lte=price_max)
+            # Price filters with safe parsing
+            price_min = (self.request.GET.get('price_min') or '').strip()
+            if price_min:
+                try:
+                    queryset = queryset.filter(sale_price__gte=float(price_min))
+                except (ValueError, TypeError):
+                    pass
+                
+            price_max = (self.request.GET.get('price_max') or '').strip()
+            if price_max:
+                try:
+                    queryset = queryset.filter(sale_price__lte=float(price_max))
+                except (ValueError, TypeError):
+                    pass
 
-        # If no filters applied, return none unless filter param present
-        has_filters = any([query, category and category != 'all', metal and metal != 'all', 
-                          size and size != 'all', location and location != 'all', price_min, price_max])
-        
-        if has_filters or self.request.GET.get('filter'):
-            return queryset.order_by('style_code', 'location')
-        else:
+            # Check if ANY filter is actually applied
+            has_filters = any([
+                query,
+                category and category != 'all',
+                metal and metal != 'all',
+                size and size != 'all',
+                location and location != 'all',
+                price_min,
+                price_max
+            ])
+            
+            # If filter button clicked, show results even if no filters
+            if self.request.GET.get('filter') or has_filters:
+                return queryset.order_by('style_code', 'location')
+            else:
+                return StockSnapshot.objects.none()
+                
+        except Exception as e:
+            logger.exception("StockLookupView.get_queryset failed")
             return StockSnapshot.objects.none()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        company = self.request.user.company
-        if not company:
-            from apps.core.models import Company
-            company = Company.objects.first()
         
-        if company:
-            base_qs = StockSnapshot.objects.filter(company=company)
-            # Get latest snapshot
-            latest_date = base_qs.aggregate(Max('snapshot_date'))['snapshot_date__max']
-            if latest_date:
-                base_qs = base_qs.filter(snapshot_date=latest_date)
+        # Initialize defaults to prevent template errors
+        context.update({
+            'categories': [],
+            'metals': [],
+            'sizes': [],
+            'locations': [],
+            'snapshot_date': None,
+            'grouped_items': [],
+            'current_filters': self.request.GET,
+            'query_string': '',
+        })
+        
+        try:
+            company = self.request.user.company
+            if not company:
+                from apps.core.models import Company
+                company = Company.objects.first()
             
-            # Populate Filter Options (Distinct Values)
-            context['categories'] = base_qs.exclude(category='').values_list('category', flat=True).distinct().order_by('category')
-            context['metals'] = base_qs.exclude(base_metal='').values_list('base_metal', flat=True).distinct().order_by('base_metal')
-            context['sizes'] = base_qs.exclude(item_size='').values_list('item_size', flat=True).distinct().order_by('item_size')
-            context['locations'] = base_qs.exclude(location='').values_list('location', flat=True).distinct().order_by('location')
-            context['snapshot_date'] = latest_date
-        else:
-            context['categories'] = []
-            context['metals'] = []
-            context['sizes'] = []
-            context['locations'] = []
+            if company:
+                base_qs = StockSnapshot.objects.filter(company=company)
+                # Get latest snapshot
+                latest_date = base_qs.aggregate(Max('snapshot_date'))['snapshot_date__max']
+                
+                if latest_date:
+                    base_qs = base_qs.filter(snapshot_date=latest_date)
+                    context['snapshot_date'] = latest_date
+                    
+                    # Safely populate filter options with limits
+                    try:
+                        context['categories'] = list(base_qs.exclude(category='').values_list('category', flat=True).distinct().order_by('category')[:100])
+                        context['metals'] = list(base_qs.exclude(base_metal='').values_list('base_metal', flat=True).distinct().order_by('base_metal')[:50])
+                        context['sizes'] = list(base_qs.exclude(item_size='').values_list('item_size', flat=True).distinct().order_by('item_size')[:50])
+                        context['locations'] = list(base_qs.exclude(location='').values_list('location', flat=True).distinct().order_by('location')[:100])
+                    except Exception as e:
+                        logger.error(f"Error loading filter options: {e}")
+            
+            # Build pagination query string (without page param to prevent duplication)
+            query_params = self.request.GET.copy()
+            if 'page' in query_params:
+                query_params.pop('page')
+            context['query_string'] = query_params.urlencode()
+            
+            # Group items by style_code with defensive null handling
+            stock_items = context.get('stock_items') or []
+            grouped = {}
+            
+            for item in stock_items:
+                if not item:
+                    continue
+                    
+                style = item.style_code or 'Unknown'
+                
+                if style not in grouped:
+                    grouped[style] = {
+                        'style_code': style,
+                        'category': item.category or 'Unknown',
+                        'sub_category': item.sub_category or '',
+                        'base_metal': item.base_metal or '',
+                        'total_qty': 0,
+                        'min_price': item.sale_price or 0,
+                        'max_price': item.sale_price or 0,
+                        'locations': [],
+                        'first_item': item,
+                    }
+                
+                grouped[style]['total_qty'] += (item.quantity or 0)
+                
+                # Update price range safely
+                item_price = item.sale_price or 0
+                if item_price > 0:
+                    current_min = grouped[style]['min_price']
+                    current_max = grouped[style]['max_price']
+                    grouped[style]['min_price'] = min(current_min, item_price) if current_min > 0 else item_price
+                    grouped[style]['max_price'] = max(current_max, item_price)
+                
+                grouped[style]['locations'].append({
+                    'location': item.location or 'Unknown',
+                    'quantity': item.quantity or 0,
+                    'sale_price': item.sale_price or 0,
+                    'jewel_code': item.jewel_code or '',
+                    'certificate_no': item.certificate_no or '',
+                    'gross_weight': item.gross_weight or 0,
+                    'diamond_pieces': item.diamond_pieces or 0,
+                })
+            
+            context['grouped_items'] = list(grouped.values())
+            
+        except Exception as e:
+            logger.exception("StockLookupView.get_context_data failed")
+            context['error'] = str(e)
         
-        # Pass current filters to context
-        context['current_filters'] = self.request.GET
-        
-        # Group items by style_code
-        stock_items = context.get('stock_items', [])
-        grouped = {}
-        for item in stock_items:
-            style = item.style_code
-            if style not in grouped:
-                grouped[style] = {
-                    'style_code': style,
-                    'category': item.category,
-                    'sub_category': item.sub_category,
-                    'base_metal': item.base_metal,
-                    'total_qty': 0,
-                    'min_price': item.sale_price,
-                    'max_price': item.sale_price,
-                    'locations': [],
-                    'first_item': item,
-                }
-            grouped[style]['total_qty'] += item.quantity
-            grouped[style]['min_price'] = min(grouped[style]['min_price'], item.sale_price)
-            grouped[style]['max_price'] = max(grouped[style]['max_price'], item.sale_price)
-            grouped[style]['locations'].append({
-                'location': item.location,
-                'quantity': item.quantity,
-                'sale_price': item.sale_price,
-                'jewel_code': item.jewel_code,
-                'certificate_no': item.certificate_no,
-                'gross_weight': item.gross_weight,
-                'diamond_pieces': item.diamond_pieces,
-            })
-        
-        context['grouped_items'] = list(grouped.values())
         return context
 
 
