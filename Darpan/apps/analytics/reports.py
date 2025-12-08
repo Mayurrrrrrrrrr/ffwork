@@ -688,43 +688,64 @@ class SalespersonScorecardReport(LoginRequiredMixin, ReportAccessMixin, Template
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        company = get_company(self.request.user)
-        
-        context['filters'] = get_filter_options(company)
-        context['current_filters'] = self.request.GET
-        
-        sales_qs = SalesRecord.objects.filter(company=company, transaction_type='sale') if company else SalesRecord.objects.none()
-        sales_qs = apply_filters(sales_qs, self.request)
-        
-        # All salespersons ranked
-        salesperson_stats = list(sales_qs.exclude(sales_person='').values('sales_person').annotate(
-            revenue=Sum('revenue'),
-            transactions=Count('id'),
-            items=Sum('quantity'),
-            margin=Sum('gross_margin'),
-            avg_discount=Avg('discount_percentage')
-        ).order_by('-revenue'))
-        
-        # Calculate ranks and contribution %
-        total_revenue = sum(s['revenue'] or 0 for s in salesperson_stats)
-        for i, s in enumerate(salesperson_stats):
-            s['rank'] = i + 1
-            s['contribution'] = round((s['revenue'] or 0) / max(total_revenue, 1) * 100, 1)
-            s['avg_value'] = (s['revenue'] or 0) / max(s['transactions'], 1)  # Calculate avg_value in Python
-        
-        context['salesperson_stats'] = salesperson_stats
-        context['total_salespersons'] = len(salesperson_stats)
-        context['total_revenue'] = total_revenue
-        
-        # Top performer details
-        if salesperson_stats:
-            top = salesperson_stats[0]['sales_person']
-            top_qs = sales_qs.filter(sales_person=top)
-            context['top_performer'] = {
-                'name': top,
-                'revenue': salesperson_stats[0]['revenue'],
-                'top_categories': list(top_qs.values('product_category').annotate(rev=Sum('revenue')).order_by('-rev')[:5]),
-                'top_products': list(top_qs.values('style_code').annotate(rev=Sum('revenue')).order_by('-rev')[:5])
-            }
+        try:
+            company = get_company(self.request.user)
+            
+            context['filters'] = get_filter_options(company)
+            context['current_filters'] = self.request.GET
+            
+            sales_qs = SalesRecord.objects.filter(company=company, transaction_type='sale') if company else SalesRecord.objects.none()
+            sales_qs = apply_filters(sales_qs, self.request)
+            
+            # All salespersons ranked
+            salesperson_stats = list(sales_qs.exclude(sales_person='').values('sales_person').annotate(
+                revenue=Sum('revenue'),
+                transactions=Count('id'),
+                items=Sum('quantity'),
+                margin=Sum('gross_margin'),
+                avg_discount=Avg('discount_percentage')
+            ).order_by('-revenue'))
+            
+            # Calculate ranks and contribution % with safe handling
+            total_revenue = sum(safe_float(s.get('revenue'), 0) for s in salesperson_stats)
+            for i, s in enumerate(salesperson_stats):
+                s['rank'] = i + 1
+                # Safe contribution calculation
+                revenue = safe_float(s.get('revenue'), 0)
+                transactions = s.get('transactions') or 0
+                s['contribution'] = round(revenue / max(total_revenue, 1) * 100, 1)
+                s['avg_value'] = revenue / max(transactions, 1) if transactions > 0 else 0
+                # Ensure all values are not None
+                s['revenue'] = revenue
+                s['margin'] = safe_float(s.get('margin'), 0)
+                s['items'] = s.get('items') or 0
+                s['avg_discount'] = safe_float(s.get('avg_discount'), 0)
+            
+            context['salesperson_stats'] = salesperson_stats
+            context['total_salespersons'] = len(salesperson_stats)
+            context['total_revenue'] = total_revenue
+            
+            # Top performer details
+            if salesperson_stats:
+                top = salesperson_stats[0]['sales_person']
+                top_qs = sales_qs.filter(sales_person=top)
+                context['top_performer'] = {
+                    'name': top,
+                    'revenue': salesperson_stats[0]['revenue'],
+                    'top_categories': list(top_qs.values('product_category').annotate(rev=Sum('revenue')).order_by('-rev')[:5]),
+                    'top_products': list(top_qs.values('style_code').annotate(rev=Sum('revenue')).order_by('-rev')[:5])
+                }
+            else:
+                context['top_performer'] = None
+                
+        except Exception as e:
+            logger.exception("SalespersonScorecardReport failed")
+            context.setdefault('salesperson_stats', [])
+            context.setdefault('total_salespersons', 0)
+            context.setdefault('total_revenue', 0)
+            context.setdefault('top_performer', None)
+            context.setdefault('filters', {})
+            context.setdefault('current_filters', {})
+            context['error'] = str(e)
         
         return context
