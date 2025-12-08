@@ -236,7 +236,7 @@
                         <div class="filter-checkbox">
                             <label>
                                 <input type="checkbox" name="category" value="{{ cat.category }}" {% if
-                                    current_filters.category==cat.category %}checked{% endif %}
+                                    current_filters.category == cat.category %}checked{% endif %}
                                     @change="applyFilter('category', '{{ cat.category }}')">
                                 <span class="ms-2">{{ cat.category }} ({{ cat.count }})</span>
                             </label>
@@ -257,7 +257,7 @@
                         <div class="filter-checkbox">
                             <label>
                                 <input type="checkbox" name="metal" value="{{ metal.base_metal }}" {% if
-                                    current_filters.metal==metal.base_metal %}checked{% endif %}
+                                    current_filters.metal == metal.base_metal %}checked{% endif %}
                                     @change="applyFilter('metal', '{{ metal.base_metal }}')">
                                 <span class="ms-2">{{ metal.base_metal }} ({{ metal.count }})</span>
                             </label>

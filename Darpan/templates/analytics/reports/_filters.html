@@ -16,16 +16,14 @@
                 <label class="form-label small">Category</label>
                 <select name="category" class="form-select form-select-sm">
                     <option value="">All</option>
-                    {% for c in filters.categories %}<option value="{{ c }}" {% if current_filters.category==c
-                        %}selected{% endif %}>{{ c }}</option>{% endfor %}
+                    {% for c in filters.categories %}<option value="{{ c }}" {% if current_filters.category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
                 </select>
             </div>
             <div class="col-md-2">
                 <label class="form-label small">Location</label>
                 <select name="location" class="form-select form-select-sm">
                     <option value="">All</option>
-                    {% for l in filters.locations %}<option value="{{ l }}" {% if current_filters.location==l
-                        %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                    {% for l in filters.locations %}<option value="{{ l }}" {% if current_filters.location == l %}selected{% endif %}>{{ l }}</option>{% endfor %}
                 </select>
             </div>
             <div class="col-md-2">

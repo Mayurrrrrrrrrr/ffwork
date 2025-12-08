@@ -152,8 +152,7 @@
                                 <button class="btn btn-sm btn-outline-primary w-100 location-toggle" type="button"
                                     data-bs-toggle="collapse" data-bs-target="#locations-{{ forloop.counter }}"
                                     aria-expanded="false">
-                                    📍 {{ group.locations|length }} Location{% if group.locations|length > 1 %}s{% endif
-                                    %}
+                                    📍 {{ group.locations|length }} Location{% if group.locations|length > 1 %}s{% endif %}
                                 </button>
                                 <div class="collapse mt-2" id="locations-{{ forloop.counter }}">
                                     <div class="list-group list-group-flush small">
