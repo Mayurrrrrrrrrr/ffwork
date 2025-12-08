@@ -16,7 +16,7 @@
                 <label class="form-label small">Category</label>
                 <select name="category" class="form-select form-select-sm">
                     <option value="">All</option>
-                    {% for c in filters.categories %}<option value="{{ c }}" {% if current_filters.category == c
+                    {% for c in filters.categories %}<option value="{{ c }}" {% if current_filters.category==c
                         %}selected{% endif %}>{{ c }}</option>{% endfor %}
                 </select>
             </div>
@@ -24,7 +24,7 @@
                 <label class="form-label small">Location</label>
                 <select name="location" class="form-select form-select-sm">
                     <option value="">All</option>
-                    {% for l in filters.locations %}<option value="{{ l }}" {% if current_filters.location == l
+                    {% for l in filters.locations %}<option value="{{ l }}" {% if current_filters.location==l
                         %}selected{% endif %}>{{ l }}</option>{% endfor %}
                 </select>
             </div>
@@ -32,8 +32,7 @@
                 <label class="form-label small">Metal</label>
                 <select name="metal" class="form-select form-select-sm">
                     <option value="">All</option>
-                    {% for m in filters.metals %}<option value="{{ m }}" {% if current_filters.metal == m %}selected{%
-                        endif %}>{{ m }}</option>{% endfor %}
+                    {% for m in filters.metals %}<option value="{{ m }}" {% if current_filters.metal==m %}selected{% endif %}>{{ m }}</option>{% endfor %}
                 </select>
             </div>
             <div class="col-md-2">
