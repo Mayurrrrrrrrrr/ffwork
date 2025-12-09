@@ -32,7 +32,7 @@
                                 <option value="all">All Categories</option>
                                 {% for cat in categories %}
                                 {% if cat %}
-                                <option value="{{ cat }}" {% if current_filters.category == cat %}selected{% endif %}>{{
+                                <option value="{{ cat }}" {% if current_filters.category==cat %}selected{% endif %}>{{
                                     cat }}</option>
                                 {% endif %}
                                 {% endfor %}
@@ -45,7 +45,7 @@
                                 <option value="all">All Metals</option>
                                 {% for metal in metals %}
                                 {% if metal %}
-                                <option value="{{ metal }}" {% if current_filters.metal == metal %}selected{% endif %}>{{
+                                <option value="{{ metal }}" {% if current_filters.metal==metal %}selected{% endif %}>{{
                                     metal }}</option>
                                 {% endif %}
                                 {% endfor %}
@@ -58,7 +58,7 @@
                                 <option value="all">All Sizes</option>
                                 {% for size in sizes %}
                                 {% if size %}
-                                <option value="{{ size }}" {% if current_filters.size == size %}selected{% endif %}>{{
+                                <option value="{{ size }}" {% if current_filters.size==size %}selected{% endif %}>{{
                                     size }}</option>
                                 {% endif %}
                                 {% endfor %}
@@ -71,7 +71,7 @@
                                 <option value="all">All Locations</option>
                                 {% for loc in locations %}
                                 {% if loc %}
-                                <option value="{{ loc }}" {% if current_filters.location == loc %}selected{% endif %}>{{
+                                <option value="{{ loc }}" {% if current_filters.location==loc %}selected{% endif %}>{{
                                     loc }}</option>
                                 {% endif %}
                                 {% endfor %}
@@ -152,7 +152,8 @@
                                 <button class="btn btn-sm btn-outline-primary w-100 location-toggle" type="button"
                                     data-bs-toggle="collapse" data-bs-target="#locations-{{ forloop.counter }}"
                                     aria-expanded="false">
-                                    📍 {{ group.locations|length }} Location{% if group.locations|length > 1 %}s{% endif %}
+                                    📍 {{ group.locations|length }} Location{% if group.locations|length > 1 %}s{% endif
+                                    %}
                                 </button>
                                 <div class="collapse mt-2" id="locations-{{ forloop.counter }}">
                                     <div class="list-group list-group-flush small">
@@ -230,18 +231,41 @@
 </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Prevent dropdown from closing when clicking inside
-        document.querySelectorAll('.location-toggle').forEach(function(button) {
-            button.addEventListener('click', function(event) {
-                event.stopPropagation();
+    document.addEventListener('DOMContentLoaded', function () {
+        // Get all location toggle buttons
+        const toggleButtons = document.querySelectorAll('.location-toggle');
+
+        toggleButtons.forEach(function (button) {
+            button.addEventListener('click', function (e) {
+                // Prevent any default behavior and event bubbling
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+
+                // Get the target collapse element
+                const targetId = this.getAttribute('data-bs-target');
+                const collapseElement = document.querySelector(targetId);
+
+                if (collapseElement) {
+                    // Use Bootstrap's Collapse API to toggle
+                    const bsCollapse = new bootstrap.Collapse(collapseElement, {
+                        toggle: false
+                    });
+
+                    // Check if currently shown
+                    if (collapseElement.classList.contains('show')) {
+                        bsCollapse.hide();
+                    } else {
+                        bsCollapse.show();
+                    }
+                }
             });
         });
-        
-        // Prevent collapse from closing when clicking inside the dropdown content
-        document.querySelectorAll('.collapse').forEach(function(collapseElement) {
-            collapseElement.addEventListener('click', function(event) {
-                event.stopPropagation();
+
+        // Prevent clicks inside dropdown from closing it
+        document.querySelectorAll('.collapse').forEach(function (collapseElement) {
+            collapseElement.addEventListener('click', function (e) {
+                e.stopPropagation();
             });
         });
     });
