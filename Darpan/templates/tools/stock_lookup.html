@@ -147,36 +147,34 @@
                                 </span>
                             </div>
 
-                            <!-- Locations Toggle -->
+
+                            <!-- Locations Display (No Dropdown) -->
                             <div class="mt-2">
-                                <button class="btn btn-sm btn-outline-primary w-100 location-toggle" type="button"
-                                    data-bs-toggle="collapse" data-bs-target="#locations-{{ forloop.counter }}"
-                                    aria-expanded="false">
+                                <div class="fw-bold text-primary mb-2" style="font-size: 0.9rem;">
                                     📍 {{ group.locations|length }} Location{% if group.locations|length > 1 %}s{% endif
-                                    %}
-                                </button>
-                                <div class="collapse mt-2" id="locations-{{ forloop.counter }}">
-                                    <div class="list-group list-group-flush small">
-                                        {% for loc in group.locations %}
-                                        <div class="list-group-item p-2">
-                                            <div class="d-flex justify-content-between">
-                                                <strong>{{ loc.location }}</strong>
-                                                <span class="badge bg-success">{{ loc.quantity }}</span>
-                                            </div>
-                                            <div class="text-muted" style="font-size: 0.75rem;">
-                                                ₹{{ loc.sale_price|floatformat:0 }} | {{ loc.gross_weight }}g
-                                                {% if loc.diamond_pieces %} | {{ loc.diamond_pieces }} dia{% endif %}
-                                            </div>
-                                            {% if loc.jewel_code %}
-                                            <div class="text-muted" style="font-size: 0.7rem;">
-                                                <code>{{ loc.jewel_code }}</code>
-                                                {% if loc.certificate_no %}<span class="badge bg-warning text-dark">{{
-                                                    loc.certificate_no }}</span>{% endif %}
-                                            </div>
+                                    %}:
+                                </div>
+                                <div class="list-group list-group-flush small">
+                                    {% for loc in group.locations %}
+                                    <div class="list-group-item p-2">
+                                        <div class="d-flex justify-content-between">
+                                            <strong>{{ loc.location }}</strong>
+                                            <span class="badge bg-success">{{ loc.quantity }}</span>
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">
+                                            ₹{{ loc.sale_price|floatformat:0 }} | {{ loc.gross_weight }}g
+                                            {% if loc.diamond_pieces %} | {{ loc.diamond_pieces }} dia{% endif %}
+                                        </div>
+                                        {% if loc.jewel_code %}
+                                        <div class="text-muted" style="font-size: 0.7rem;">
+                                            <code>{{ loc.jewel_code }}</code>
+                                            {% if loc.certificate_no %}
+                                            <span class="badge bg-warning text-dark">{{ loc.certificate_no }}</span>
                                             {% endif %}
                                         </div>
-                                        {% endfor %}
+                                        {% endif %}
                                     </div>
+                                    {% endfor %}
                                 </div>
                             </div>
                         </div>
@@ -212,8 +210,7 @@
             <div class="alert alert-warning text-center py-5">
                 <i data-lucide="search-x" class="mb-3" style="width: 48px; height: 48px;"></i>
                 <h5>No products found</h5>
-                <p class="text-muted">Try adjusting your filters or search query.</p>
-                <a href="{% url 'analytics:import' %}" class="btn btn-primary mt-2">Import Stock Data</a>
+                <p class="text-center text-muted">No products found. Try adjusting your filters.</p>
             </div>
             {% endif %}
         </div>
