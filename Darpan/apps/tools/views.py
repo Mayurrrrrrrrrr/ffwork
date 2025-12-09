@@ -123,15 +123,23 @@ class StockLookupView(LoginRequiredMixin, StockAccessRequiredMixin, ListView):
             'current_filters': self.request.GET,
             'query_string': '',
         })
-        
         try:
+            # Get user's company or fallback to any available company
             company = self.request.user.company
             if not company:
-                from apps.core.models import Company
+                from apps.core.models import Company  
                 company = Company.objects.first()
             
+            # Query stock for user's company, or all stock if no company match
             if company:
                 base_qs = StockSnapshot.objects.filter(company=company)
+                if not base_qs.exists():
+                    # Fallback: show all stock data if user's company has no data
+                    base_qs = StockSnapshot.objects.all()
+            else:
+                base_qs = StockSnapshot.objects.all()
+                
+            if base_qs.exists():
                 # Get latest snapshot
                 latest_date = base_qs.aggregate(Max('snapshot_date'))['snapshot_date__max']
                 
@@ -139,12 +147,18 @@ class StockLookupView(LoginRequiredMixin, StockAccessRequiredMixin, ListView):
                     base_qs = base_qs.filter(snapshot_date=latest_date)
                     context['snapshot_date'] = latest_date
                     
+                    # Debug logging
+                    logger.info(f"StockLookup: Found {base_qs.count()} records for latest_date {latest_date}")
+                    
                     # Safely populate filter options with limits
                     try:
                         context['categories'] = list(base_qs.exclude(category='').values_list('category', flat=True).distinct().order_by('category')[:100])
                         context['metals'] = list(base_qs.exclude(base_metal='').values_list('base_metal', flat=True).distinct().order_by('base_metal')[:50])
                         context['sizes'] = list(base_qs.exclude(item_size='').values_list('item_size', flat=True).distinct().order_by('item_size')[:50])
                         context['locations'] = list(base_qs.exclude(location='').values_list('location', flat=True).distinct().order_by('location')[:100])
+                        
+                        # Debug log filter counts
+                        logger.info(f"StockLookup Filters - Categories: {len(context['categories'])}, Metals: {len(context['metals'])}, Sizes: {len(context['sizes'])}, Locations: {len(context['locations'])}")
                     except Exception as e:
                         logger.error(f"Error loading filter options: {e}")
             
