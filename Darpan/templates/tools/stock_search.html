@@ -30,7 +30,7 @@
                             <select name="category" class="form-select">
                                 <option value="all">All Categories</option>
                                 {% for cat in categories %}
-                                <option value="{{ cat }}" {% if current_category==cat %}selected{% endif %}>
+                                <option value="{{ cat }}" {% if current_category == cat %}selected{% endif %}>
                                     {{ cat }}
                                 </option>
                                 {% endfor %}
@@ -43,7 +43,7 @@
                             <select name="metal" class="form-select">
                                 <option value="all">All Metals</option>
                                 {% for m in metals %}
-                                <option value="{{ m }}" {% if current_metal==m %}selected{% endif %}>
+                                <option value="{{ m }}" {% if current_metal == m %}selected{% endif %}>
                                     {{ m }}
                                 </option>
                                 {% endfor %}
@@ -56,7 +56,7 @@
                             <select name="size" class="form-select">
                                 <option value="all">All Sizes</option>
                                 {% for s in sizes %}
-                                <option value="{{ s }}" {% if current_size==s %}selected{% endif %}>
+                                <option value="{{ s }}" {% if current_size == s %}selected{% endif %}>
                                     {{ s }}
                                 </option>
                                 {% endfor %}
@@ -69,7 +69,7 @@
                             <select name="location" class="form-select">
                                 <option value="all">All Locations</option>
                                 {% for loc in locations %}
-                                <option value="{{ loc }}" {% if current_location==loc %}selected{% endif %}>
+                                <option value="{{ loc }}" {% if current_location == loc %}selected{% endif %}>
                                     {{ loc }}
                                 </option>
                                 {% endfor %}
