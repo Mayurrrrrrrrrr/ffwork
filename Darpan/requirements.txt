@@ -32,3 +32,4 @@ markdown==3.5.1
 
 # Monitoring (Optional - uncomment when ready)
 # sentry-sdk==1.35.0
+reportlab==4.0.7

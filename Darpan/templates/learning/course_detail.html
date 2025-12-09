@@ -74,7 +74,7 @@
                                         <div class="d-flex align-items-center">
                                             <span class="me-2">{{ lesson.title }}</span>
                                             <span class="badge bg-light text-secondary border">
-                                                {% if lesson.content_type  ==  'video' %}
+                                                {% if lesson.content_type == 'video' %}
                                                 <i data-lucide="play-circle" style="width:12px;height:12px;"
                                                     class="me-1"></i> Video
                                                 {% elif lesson.content_type == 'text' %}
@@ -133,6 +133,26 @@
                             Certificate on completion
                         </li>
                     </ul>
+
+                    {% if progress.status == 'completed' and progress.progress_percent == 100 %}
+                    <div class="mt-4 pt-3 border-top">
+                        <a href="{% url 'learning:generate_certificate' course.id %}" class="btn btn-success w-100">
+                            <i data-lucide="award" class="me-2"></i>
+                            Download Certificate
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Leaderboard Link -->
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <i data-lucide="trophy" class="text-warning mb-2" style="width: 32px; height: 32px;"></i>
+                    <h6>Check Your Ranking</h6>
+                    <a href="{% url 'learning:leaderboard' %}" class="btn btn-outline-primary btn-sm">
+                        View Leaderboard
+                    </a>
                 </div>
             </div>
         </div>
