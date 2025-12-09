@@ -230,13 +230,20 @@
 </style>
 
 <script>
-    function toggleLocations(btn, targetId) {
-        var el = document.getElementById(targetId);
-        if (el.classList.contains('show')) {
-            el.classList.remove('show');
-        } else {
-            el.classList.add('show');
-        }
-    }
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prevent dropdown from closing when clicking inside
+        document.querySelectorAll('.location-toggle').forEach(function(button) {
+            button.addEventListener('click', function(event) {
+                event.stopPropagation();
+            });
+        });
+        
+        // Prevent collapse from closing when clicking inside the dropdown content
+        document.querySelectorAll('.collapse').forEach(function(collapseElement) {
+            collapseElement.addEventListener('click', function(event) {
+                event.stopPropagation();
+            });
+        });
+    });
 </script>
 {% endblock %}
