@@ -1,0 +1,270 @@
+{% extends "base/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Advanced Product Finder{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <!-- Sidebar Filters -->
+        <div class="col-md-3 col-lg-2 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i data-lucide="filter" class="me-2" style="width: 18px;"></i> Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" action="{% url 'tools:stock_lookup' %}">
+                        <input type="hidden" name="filter" value="true">
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Search</label>
+                            <input type="text" name="q" class="form-control" placeholder="Name, SKU, Store..."
+                                value="{{ current_filters.q }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Category</label>
+                            <select name="category" class="form-select">
+                                <option value="all">All Categories</option>
+                                {% for cat in categories %}
+                                {% if cat %}
+                                <option value="{{ cat }}" {% if current_filters.category == cat %}selected{% endif %}>{{
+                                    cat }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Metal</label>
+                            <select name="metal" class="form-select">
+                                <option value="all">All Metals</option>
+                                {% for metal in metals %}
+                                {% if metal %}
+                                <option value="{{ metal }}" {% if current_filters.metal == metal %}selected{% endif %}>{{
+                                    metal }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Size</label>
+                            <select name="size" class="form-select">
+                                <option value="all">All Sizes</option>
+                                {% for size in sizes %}
+                                {% if size %}
+                                <option value="{{ size }}" {% if current_filters.size == size %}selected{% endif %}>{{
+                                    size }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Location</label>
+                            <select name="location" class="form-select">
+                                <option value="all">All Locations</option>
+                                {% for loc in locations %}
+                                {% if loc %}
+                                <option value="{{ loc }}" {% if current_filters.location == loc %}selected{% endif %}>{{
+                                    loc }}</option>
+                                {% endif %}
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Price Range</label>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text">Min</span>
+                                <input type="number" name="price_min" class="form-control"
+                                    value="{{ current_filters.price_min }}">
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text">Max</span>
+                                <input type="number" name="price_max" class="form-control"
+                                    value="{{ current_filters.price_max }}">
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">Apply Filters</button>
+                            <a href="{% url 'tools:stock_lookup' %}" class="btn btn-outline-secondary">Reset</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Gallery -->
+        <div class="col-md-9 col-lg-10">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4>Search Results <span class="text-muted fs-6">({{ grouped_items|length }} styles found)</span>
+                </h4>
+            </div>
+
+            {% if grouped_items %}
+            <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+                {% for group in grouped_items %}
+                <div class="col">
+                    <div class="card h-100 shadow-sm product-card">
+                        <!-- Product Image from S3 -->
+                        <div class="bg-light d-flex align-items-center justify-content-center"
+                            style="height: 200px; overflow: hidden;">
+                            {% if group.style_code %}
+                            <img src="https://fireflylgd-assets.s3.eu-north-1.amazonaws.com/public/shopify/compressed-images/{{ group.style_code|slice:':3' }}/{{ group.style_code }}.jpg"
+                                class="card-img-top" alt="{{ group.style_code }}"
+                                onerror="this.onerror=null; this.src='https://via.placeholder.com/300x300?text={{ group.style_code|slice:':6' }}';">
+                            {% else %}
+                            <span class="text-muted"><i data-lucide="image"
+                                    style="width: 48px; height: 48px;"></i></span>
+                            {% endif %}
+                        </div>
+
+                        <div class="card-body">
+                            <h6 class="card-title text-truncate" title="{{ group.style_code }}">
+                                {{ group.style_code }}
+                            </h6>
+                            <p class="card-text small mb-1">
+                                <span class="badge bg-secondary">{{ group.category }}</span>
+                                {% if group.sub_category %}
+                                <span class="badge bg-info text-dark">{{ group.sub_category }}</span>
+                                {% endif %}
+                            </p>
+                            <p class="card-text small text-muted mb-1">
+                                {{ group.base_metal }}
+                            </p>
+                            <div class="d-flex justify-content-between align-items-center mt-2">
+                                <!-- Price removed as requested -->
+                                <span
+                                    class="badge {% if group.total_qty > 0 %}bg-success{% else %}bg-danger{% endif %}">
+                                    Total: {{ group.total_qty }}
+                                </span>
+                            </div>
+
+
+                            <!-- Locations Display (No Dropdown) -->
+                            <div class="mt-2">
+                                <div class="fw-bold text-primary mb-2" style="font-size: 0.9rem;">
+                                    📍 {{ group.locations|length }} Location{% if group.locations|length > 1 %}s{% endif
+                                    %}:
+                                </div>
+                                <div class="list-group list-group-flush small">
+                                    {% for loc in group.locations %}
+                                    <div class="list-group-item p-2">
+                                        <div class="d-flex justify-content-between">
+                                            <strong>{{ loc.location }}</strong>
+                                            <span class="badge bg-success">{{ loc.quantity }}</span>
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">
+                                            ₹{{ loc.sale_price|floatformat:0 }} | {{ loc.gross_weight }}g
+                                            {% if loc.diamond_pieces %} | {{ loc.diamond_pieces }} dia{% endif %}
+                                        </div>
+                                        {% if loc.jewel_code %}
+                                        <div class="text-muted" style="font-size: 0.7rem;">
+                                            <code>{{ loc.jewel_code }}</code>
+                                            {% if loc.certificate_no %}
+                                            <span class="badge bg-warning text-dark">{{ loc.certificate_no }}</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?{{ request.GET.urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    </li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link"
+                            href="?{{ request.GET.urlencode }}&page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+            {% else %}
+            <div class="alert alert-warning text-center py-5">
+                <i data-lucide="search-x" class="mb-3" style="width: 48px; height: 48px;"></i>
+                <h5>No products found</h5>
+                <p class="text-center text-muted">No products found. Try adjusting your filters.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .product-card {
+        transition: transform 0.2s;
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Get all location toggle buttons
+        const toggleButtons = document.querySelectorAll('.location-toggle');
+
+        toggleButtons.forEach(function (button) {
+            button.addEventListener('click', function (e) {
+                // Prevent any default behavior and event bubbling
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+
+                // Get the target collapse element
+                const targetId = this.getAttribute('data-bs-target');
+                const collapseElement = document.querySelector(targetId);
+
+                if (collapseElement) {
+                    // Use Bootstrap's Collapse API to toggle
+                    const bsCollapse = new bootstrap.Collapse(collapseElement, {
+                        toggle: false
+                    });
+
+                    // Check if currently shown
+                    if (collapseElement.classList.contains('show')) {
+                        bsCollapse.hide();
+                    } else {
+                        bsCollapse.show();
+                    }
+                }
+            });
+        });
+
+        // Prevent clicks inside dropdown from closing it
+        document.querySelectorAll('.collapse').forEach(function (collapseElement) {
+            collapseElement.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+        });
+    });
+</script>
+{% endblock %}
