@@ -32,17 +32,6 @@
                         class="btn btn-outline-secondary btn-sm">Cancel</a>
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info mb-4">
-                        <h6 class="alert-heading mb-2">
-                            <i data-lucide="info" class="me-1" style="width:16px;"></i>Content Types
-                        </h6>
-                        <ul class="mb-0 small">
-                            <li><strong>Video:</strong> YouTube or Vimeo embed URL</li>
-                            <li><strong>Text/Article:</strong> Rich text content</li>
-                            <li><strong>PDF/Word/PPT:</strong> Upload document files</li>
-                        </ul>
-                    </div>
-
                     <form method="post" enctype="multipart/form-data">
                         {% csrf_token %}
 
@@ -54,17 +43,28 @@
                             {% endif %}
                         </div>
 
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Content Type <span class="text-danger">*</span></label>
+                            <div class="row g-2">
+                                {% for radio in form.content_type %}
+                                <div class="col-6 col-md-4">
+                                    <div class="form-check border rounded p-3 h-100">
+                                        {{ radio.tag }}
+                                        <label class="form-check-label ms-2" for="{{ radio.id_for_label }}">
+                                            {{ radio.choice_label }}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Content Type <span
-                                        class="text-danger">*</span></label>
-                                {{ form.content_type }}
-                            </div>
-                            <div class="col-md-3 mb-3">
                                 <label class="form-label fw-bold">Duration (min)</label>
                                 {{ form.duration_minutes }}
                             </div>
-                            <div class="col-md-3 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Order</label>
                                 {{ form.order }}
                             </div>
@@ -120,31 +120,33 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const contentTypeSelect = document.getElementById('id_content_type');
+        const radioButtons = document.querySelectorAll('input[name="content_type"]');
         const videoField = document.getElementById('field-video');
         const textField = document.getElementById('field-text');
         const fileField = document.getElementById('field-file');
 
         function toggleContentFields() {
-            const type = contentTypeSelect.value;
+            const selectedRadio = document.querySelector('input[name="content_type"]:checked');
+            const type = selectedRadio ? selectedRadio.value : '';
 
-            // Hide all content fields
-            videoField.style.display = 'none';
-            textField.style.display = 'none';
-            fileField.style.display = 'none';
+            if (videoField) videoField.style.display = 'none';
+            if (textField) textField.style.display = 'none';
+            if (fileField) fileField.style.display = 'none';
 
-            // Show relevant field based on content type
-            if (type === 'video') {
+            if (type === 'video' && videoField) {
                 videoField.style.display = 'block';
-            } else if (type === 'text') {
+            } else if (type === 'text' && textField) {
                 textField.style.display = 'block';
-            } else if (['pdf', 'word', 'ppt', 'html'].includes(type)) {
+            } else if (['pdf', 'word', 'ppt', 'html'].includes(type) && fileField) {
                 fileField.style.display = 'block';
             }
         }
 
-        contentTypeSelect.addEventListener('change', toggleContentFields);
-        toggleContentFields(); // Initial state
+        radioButtons.forEach(function (radio) {
+            radio.addEventListener('change', toggleContentFields);
+        });
+
+        toggleContentFields();
     });
 </script>
 {% endblock %}

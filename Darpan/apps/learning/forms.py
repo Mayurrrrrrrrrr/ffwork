@@ -25,7 +25,7 @@ class LessonForm(forms.ModelForm):
         fields = ['title', 'content_type', 'video_url', 'text_content', 'file_upload', 'duration_minutes', 'order']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
-            'content_type': forms.Select(attrs={'class': 'form-select', 'id': 'id_content_type'}),
+            'content_type': forms.RadioSelect(attrs={'class': 'form-check-input'}),
             'video_url': forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'https://www.youtube.com/watch?v=...'}),
             'text_content': forms.Textarea(attrs={'class': 'form-control', 'rows': 8}),
             'file_upload': forms.FileInput(attrs={'class': 'form-control', 'accept': '.pdf,.docx,.pptx,.html'}),
