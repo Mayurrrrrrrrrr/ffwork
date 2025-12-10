@@ -16,8 +16,7 @@
             <div class="card shadow-sm">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                     <h4 class="mb-0">
-                        {% if object %}Edit Module: {{ object.title }}{% else %}Add Module to {{ course.title }}{% endif
-                        %}
+                        {% if object %}Edit Module: {{ object.title }}{% else %}Add Module to {{ course.title }}{% endif %}
                     </h4>
                     <a href="{% url 'learning:course_detail' course.pk %}"
                         class="btn btn-outline-secondary btn-sm">Cancel</a>
