@@ -414,6 +414,8 @@ class SalesImportView(LoginRequiredMixin, DataAdminRequiredMixin, FormView):
                 msg += f", {result['rows_ignored']} ignored (RI/RR)"
             if result.get('rows_duplicate'):
                 msg += f", {result['rows_duplicate']} duplicates skipped"
+            if result.get('rows_deleted'):
+                msg += f" (replaced {result['rows_deleted']} existing records)"
             
             if result.get('columns_unmapped'):
                 msg += f". Unmapped columns: {', '.join(result['columns_unmapped'][:5])}"

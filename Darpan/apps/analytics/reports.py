@@ -562,8 +562,23 @@ class StockSummaryReport(LoginRequiredMixin, ReportAccessMixin, TemplateView):
             value=Sum(F('quantity') * F('sale_price'))
         ).order_by('-value')[:10])
         
-        # Low stock items (qty = 1)
-        context['low_stock_items'] = stock_qs.filter(quantity__lte=1, quantity__gt=0).order_by('quantity', '-sale_price')[:30]
+        # Low stock items (qty = 1) - aggregated by style_code and location to avoid duplicates
+        low_stock_data = list(stock_qs.values('style_code', 'location', 'category').annotate(
+            total_qty=Sum('quantity'),
+            max_price=Max('sale_price')
+        ).filter(total_qty__lte=1, total_qty__gt=0).order_by('total_qty', '-max_price')[:30])
+        
+        # Reshape data for template compatibility
+        context['low_stock_items'] = [
+            {
+                'style_code': item['style_code'],
+                'location': item['location'],
+                'category': item['category'],
+                'quantity': item['total_qty'],
+                'sale_price': item['max_price']
+            }
+            for item in low_stock_data
+        ]
         
         return context
 

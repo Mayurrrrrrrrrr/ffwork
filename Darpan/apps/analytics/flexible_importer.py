@@ -379,10 +379,21 @@ class FlexibleImporter:
             
             rows_imported = 0
             rows_skipped = 0
+            rows_deleted = 0  # Track deleted duplicates
             
             records_to_create = []
             # Use provided stock_date or fall back to file date or current date
             default_snapshot_date = stock_date if stock_date else timezone.now().date()
+            
+            # Determine the actual snapshot date that will be used
+            # If stock_date is explicitly provided, delete existing records for that date
+            if stock_date:
+                deleted_count = StockSnapshot.objects.filter(
+                    company=self.company,
+                    snapshot_date=stock_date
+                ).delete()[0]
+                rows_deleted = deleted_count
+                self.warnings.append(f"Replaced {deleted_count} existing records for date {stock_date}")
             
             for idx, row in df.iterrows():
                 try:
@@ -458,6 +469,7 @@ class FlexibleImporter:
                 'success': True,
                 'rows_imported': rows_imported,
                 'rows_skipped': rows_skipped,
+                'rows_deleted': rows_deleted,
                 'columns_mapped': mapped,
                 'columns_unmapped': unmapped,
                 'warnings': self.warnings[:20],
