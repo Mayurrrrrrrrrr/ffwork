@@ -39,8 +39,12 @@ class ModuleCreateView(LoginRequiredMixin, TrainerRequiredMixin, CreateView):
     template_name = 'learning/module_form.html'
     
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.company:
+            messages.error(request, "Platform admins cannot create course modules.")
+            return redirect('learning:catalog')
         self.course = get_object_or_404(Course, pk=kwargs['pk'], company=request.user.company)
         return super().dispatch(request, *args, **kwargs)
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -63,12 +67,16 @@ class LessonCreateView(LoginRequiredMixin, TrainerRequiredMixin, CreateView):
     template_name = 'learning/lesson_form.html'
     
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.company:
+            messages.error(request, "Platform admins cannot create lessons.")
+            return redirect('learning:catalog')
         self.module = get_object_or_404(
             Module, 
             pk=kwargs['module_pk'], 
             course__company=request.user.company
         )
         return super().dispatch(request, *args, **kwargs)
+
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
