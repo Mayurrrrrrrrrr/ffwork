@@ -378,11 +378,12 @@ class SalesImportView(LoginRequiredMixin, DataAdminRequiredMixin, FormView):
     def form_valid(self, form):
         file_type = form.cleaned_data['file_type']
         uploaded_file = form.cleaned_data['data_file']
+        stock_date = form.cleaned_data.get('stock_date')  # Optional date for stock imports
         
         if file_type == 'sales':
             return self.process_flexible_import(uploaded_file, 'sales')
         elif file_type == 'stock':
-            return self.process_flexible_import(uploaded_file, 'stock')
+            return self.process_flexible_import(uploaded_file, 'stock', stock_date=stock_date)
         elif file_type == 'crm':
             return self.process_flexible_import(uploaded_file, 'crm')
         elif file_type == 'collection':
@@ -391,7 +392,7 @@ class SalesImportView(LoginRequiredMixin, DataAdminRequiredMixin, FormView):
         messages.warning(self.request, "This file type is not yet implemented.")
         return redirect('analytics:import')
 
-    def process_flexible_import(self, uploaded_file, import_type):
+    def process_flexible_import(self, uploaded_file, import_type, stock_date=None):
         """Use the new FlexibleImporter"""
         from .flexible_importer import FlexibleImporter
         
@@ -403,7 +404,7 @@ class SalesImportView(LoginRequiredMixin, DataAdminRequiredMixin, FormView):
         elif import_type == 'crm':
             result = importer.import_crm(uploaded_file)
         else:
-            result = importer.import_stock(uploaded_file)
+            result = importer.import_stock(uploaded_file, stock_date=stock_date)
         
         if result['success']:
             msg = f"Import successful: {result['rows_imported']} rows imported"
@@ -411,6 +412,8 @@ class SalesImportView(LoginRequiredMixin, DataAdminRequiredMixin, FormView):
                 msg += f", {result['rows_skipped']} skipped"
             if result.get('rows_ignored'):
                 msg += f", {result['rows_ignored']} ignored (RI/RR)"
+            if result.get('rows_duplicate'):
+                msg += f", {result['rows_duplicate']} duplicates skipped"
             
             if result.get('columns_unmapped'):
                 msg += f". Unmapped columns: {', '.join(result['columns_unmapped'][:5])}"

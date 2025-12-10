@@ -58,6 +58,25 @@ class StoreForm(forms.ModelForm):
         widgets = {
             'address': forms.Textarea(attrs={'rows': 3}),
         }
+    
+    def __init__(self, *args, available_locations=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.available_locations = available_locations or []
+        
+        # Add datalist attribute to gati_location_name field for autocomplete
+        if self.available_locations:
+            self.fields['gati_location_name'].widget.attrs.update({
+                'list': 'gati-locations-list',
+                'autocomplete': 'off',
+                'class': 'form-control',
+                'placeholder': 'Type or select a location...'
+            })
+        
+        # Update help text to indicate autocomplete is available
+        self.fields['gati_location_name'].help_text = (
+            "Start typing to see available locations from stock/sales reports, "
+            "or enter a new location name."
+        )
 
 class CompanyForm(forms.ModelForm):
     class Meta:

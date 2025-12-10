@@ -20,7 +20,17 @@ class CSVImportForm(forms.Form):
     
     file_type = forms.ChoiceField(
         choices=FILE_TYPES,
-        widget=forms.Select(attrs={'class': 'form-select'})
+        widget=forms.Select(attrs={'class': 'form-select', 'id': 'id_file_type'})
+    )
+    
+    stock_date = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control',
+            'type': 'date',
+            'id': 'id_stock_date'
+        }),
+        help_text='Specify stock date (overrides date in file if provided)'
     )
     
     data_file = forms.FileField(

@@ -1,0 +1,150 @@
+{% extends "base/base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+{% if object %}Edit Lesson{% else %}Add Lesson{% endif %} - {{ module.title }}
+{% endblock %}
+
+{% block navbar %}
+{% include "base/navbar.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <nav aria-label="breadcrumb" class="mb-3">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'learning:catalog' %}">Courses</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'learning:course_detail' course.pk %}">{{ course.title
+                            }}</a></li>
+                    <li class="breadcrumb-item active">Add Lesson to {{ module.title }}</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h4 class="mb-0">
+                        <i data-lucide="file-plus" class="me-2" style="width:24px;"></i>
+                        {% if object %}Edit Lesson{% else %}Add Lesson{% endif %}
+                    </h4>
+                    <a href="{% url 'learning:course_detail' course.pk %}"
+                        class="btn btn-outline-secondary btn-sm">Cancel</a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <h6 class="alert-heading mb-2">
+                            <i data-lucide="info" class="me-1" style="width:16px;"></i>Content Types
+                        </h6>
+                        <ul class="mb-0 small">
+                            <li><strong>Video:</strong> YouTube or Vimeo embed URL</li>
+                            <li><strong>Text/Article:</strong> Rich text content</li>
+                            <li><strong>PDF/Word/PPT:</strong> Upload document files</li>
+                        </ul>
+                    </div>
+
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Lesson Title <span class="text-danger">*</span></label>
+                            {{ form.title }}
+                            {% if form.title.errors %}
+                            <div class="text-danger small mt-1">{{ form.title.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Content Type <span
+                                        class="text-danger">*</span></label>
+                                {{ form.content_type }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-bold">Duration (min)</label>
+                                {{ form.duration_minutes }}
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label fw-bold">Order</label>
+                                {{ form.order }}
+                            </div>
+                        </div>
+
+                        <!-- Video URL Field -->
+                        <div class="mb-3 content-field" id="field-video" style="display: none;">
+                            <label class="form-label fw-bold">Video URL <span class="text-danger">*</span></label>
+                            {{ form.video_url }}
+                            <small class="text-muted d-block mt-1">
+                                Enter YouTube or Vimeo embed URL (e.g., https://www.youtube.com/embed/VIDEO_ID)
+                            </small>
+                            {% if form.video_url.errors %}
+                            <div class="text-danger small mt-1">{{ form.video_url.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Text Content Field -->
+                        <div class="mb-3 content-field" id="field-text" style="display: none;">
+                            <label class="form-label fw-bold">Text Content <span class="text-danger">*</span></label>
+                            {{ form.text_content }}
+                            {% if form.text_content.errors %}
+                            <div class="text-danger small mt-1">{{ form.text_content.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- File Upload Field -->
+                        <div class="mb-3 content-field" id="field-file" style="display: none;">
+                            <label class="form-label fw-bold">Upload File <span class="text-danger">*</span></label>
+                            {{ form.file_upload }}
+                            <small class="text-muted d-block mt-1">
+                                Accepted formats: PDF (.pdf), Word (.docx), PowerPoint (.pptx)
+                            </small>
+                            {% if form.file_upload.errors %}
+                            <div class="text-danger small mt-1">{{ form.file_upload.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <a href="{% url 'learning:course_detail' course.pk %}"
+                                class="btn btn-outline-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i data-lucide="save" class="me-1" style="width:16px;"></i>
+                                Save Lesson
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const contentTypeSelect = document.getElementById('id_content_type');
+        const videoField = document.getElementById('field-video');
+        const textField = document.getElementById('field-text');
+        const fileField = document.getElementById('field-file');
+
+        function toggleContentFields() {
+            const type = contentTypeSelect.value;
+
+            // Hide all content fields
+            videoField.style.display = 'none';
+            textField.style.display = 'none';
+            fileField.style.display = 'none';
+
+            // Show relevant field based on content type
+            if (type === 'video') {
+                videoField.style.display = 'block';
+            } else if (type === 'text') {
+                textField.style.display = 'block';
+            } else if (['pdf', 'word', 'ppt', 'html'].includes(type)) {
+                fileField.style.display = 'block';
+            }
+        }
+
+        contentTypeSelect.addEventListener('change', toggleContentFields);
+        toggleContentFields(); // Initial state
+    });
+</script>
+{% endblock %}

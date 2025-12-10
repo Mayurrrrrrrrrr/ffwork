@@ -22,7 +22,16 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1,darpan.yuktaa.com,152.67.2.136').split(',')
 
 # CSRF Trusted Origins (Required for HTTPS)
-CSRF_TRUSTED_ORIGINS = ['https://darpan.yuktaa.com', 'http://152.67.2.136']
+# Includes both HTTP and HTTPS for the IP address to handle all access methods
+CSRF_TRUSTED_ORIGINS = [
+    'https://darpan.yuktaa.com', 
+    'http://darpan.yuktaa.com',
+    'http://152.67.2.136',
+    'https://152.67.2.136',
+]
+
+# CSRF cookie settings for cross-device access
+CSRF_COOKIE_SAMESITE = 'Lax'  # Allows CSRF cookie to be sent with same-site requests
 
 
 # Application definition

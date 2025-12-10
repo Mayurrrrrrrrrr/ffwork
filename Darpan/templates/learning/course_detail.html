@@ -115,6 +115,19 @@
                                     <span class="badge bg-warning text-dark">Take Quiz</span>
                                 </a>
                                 {% endfor %}
+
+                                <!-- Add Lesson Button (Trainers/Admins only) -->
+                                {% if can_add_module %}
+                                <a href="{% url 'learning:lesson_create' module_pk=module.pk %}"
+                                    class="list-group-item list-group-item-action d-flex align-items-center py-3 bg-light">
+                                    <div class="me-3">
+                                        <i data-lucide="plus-circle" class="text-primary"></i>
+                                    </div>
+                                    <div class="flex-grow-1 text-primary fw-bold">
+                                        Add Lesson to this Module
+                                    </div>
+                                </a>
+                                {% endif %}
                             </div>
                         </div>
                     </div>

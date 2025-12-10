@@ -29,6 +29,15 @@
                             <button type="submit" class="btn btn-primary px-4">Save Store</button>
                         </div>
                     </form>
+
+                    <!-- Datalist for Gati Location autocomplete -->
+                    {% if available_locations %}
+                    <datalist id="gati-locations-list">
+                        {% for location in available_locations %}
+                        <option value="{{ location }}">
+                            {% endfor %}
+                    </datalist>
+                    {% endif %}
                 </div>
             </div>
         </div>

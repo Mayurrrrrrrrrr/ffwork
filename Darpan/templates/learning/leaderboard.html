@@ -72,6 +72,8 @@
                                         <span class="badge bg-success">📚 Advanced</span>
                                         {% elif user.avg_quiz_score >= 70 %}
                                         <span class="badge bg-info">✓ Proficient</span>
+                                        {% elif user.avg_quiz_score %}
+                                        <span class="badge bg-secondary">🎯 Learning</span>
                                         {% else %}
                                         <span class="badge bg-secondary">🎯 Learning</span>
                                         {% endif %}

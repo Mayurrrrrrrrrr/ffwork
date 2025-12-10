@@ -218,21 +218,37 @@ class FlexibleImporter:
             rename_map, mapped, unmapped = self._map_columns(df, self.SALES_COLUMN_MAP)
             df = df.rename(columns=rename_map)
             
+            # Get existing transaction numbers for this company to detect duplicates
+            existing_tx_numbers = set(
+                SalesRecord.objects.filter(company=self.company)
+                .exclude(transaction_no='')
+                .exclude(transaction_no__isnull=True)
+                .values_list('transaction_no', flat=True)
+            )
+            
             rows_imported = 0
             rows_skipped = 0
             rows_ignored = 0
+            rows_duplicate = 0  # Track duplicate transactions
             
             records_to_create = []
+            new_tx_numbers = set()  # Track transaction numbers being added in this import
             
             for idx, row in df.iterrows():
                 try:
                     # Get transaction type
                     tx_no = row.get('transaction_no', '')
+                    tx_no_str = str(tx_no).strip() if tx_no else ''
                     tx_type = self._get_transaction_type(tx_no)
                     
                     # Skip ignored transactions (RI, RR)
                     if tx_type == 'ignore':
                         rows_ignored += 1
+                        continue
+                    
+                    # Skip duplicate transactions (already in DB or in this import batch)
+                    if tx_no_str and (tx_no_str in existing_tx_numbers or tx_no_str in new_tx_numbers):
+                        rows_duplicate += 1
                         continue
                     
                     # Parse transaction date
@@ -291,6 +307,9 @@ class FlexibleImporter:
                         created_by=self.user,
                     )
                     records_to_create.append(record)
+                    # Track this transaction number to prevent duplicates within same import
+                    if tx_no_str:
+                        new_tx_numbers.add(tx_no_str)
                     rows_imported += 1
                     
                 except Exception as e:
@@ -325,6 +344,7 @@ class FlexibleImporter:
                 'rows_imported': rows_imported,
                 'rows_skipped': rows_skipped,
                 'rows_ignored': rows_ignored,
+                'rows_duplicate': rows_duplicate,
                 'columns_mapped': mapped,
                 'columns_unmapped': unmapped,
                 'warnings': self.warnings[:20],
@@ -334,8 +354,14 @@ class FlexibleImporter:
             logger.error(f"Sales import failed: {e}")
             return {'success': False, 'error': str(e)}
     
-    def import_stock(self, file):
-        """Import stock/inventory data from CSV/Excel"""
+    def import_stock(self, file, stock_date=None):
+        """Import stock/inventory data from CSV/Excel
+        
+        Args:
+            file: Uploaded file (CSV or Excel)
+            stock_date: Optional date to use as snapshot_date for all rows.
+                       If provided, overrides any date in the file.
+        """
         try:
             # Validate company first
             self._validate_company()
@@ -355,14 +381,20 @@ class FlexibleImporter:
             rows_skipped = 0
             
             records_to_create = []
-            snapshot_date = timezone.now().date()
+            # Use provided stock_date or fall back to file date or current date
+            default_snapshot_date = stock_date if stock_date else timezone.now().date()
             
             for idx, row in df.iterrows():
                 try:
-                    # Parse snapshot date if available
-                    parsed_date = self._parse_date(row.get('snapshot_date'))
-                    if parsed_date:
-                        snapshot_date = parsed_date
+                    # Determine snapshot date for this row:
+                    # 1. If stock_date was explicitly provided, use it for all rows
+                    # 2. Otherwise try to parse date from file
+                    # 3. Fall back to current date
+                    if stock_date:
+                        row_snapshot_date = stock_date
+                    else:
+                        parsed_date = self._parse_date(row.get('snapshot_date'))
+                        row_snapshot_date = parsed_date if parsed_date else default_snapshot_date
                     
                     style_code = str(row.get('style_code', ''))
                     if not style_code or style_code == 'nan':
@@ -393,7 +425,7 @@ class FlexibleImporter:
                         color_stone_pieces=self._parse_int(row.get('color_stone_pieces')),
                         color_stone_weight=self._parse_decimal(row.get('color_stone_weight')),
                         sale_price=sale_price,
-                        snapshot_date=snapshot_date,
+                        snapshot_date=row_snapshot_date,
                     )
                     records_to_create.append(record)
                     rows_imported += 1

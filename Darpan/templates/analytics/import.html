@@ -46,6 +46,15 @@
                             {{ form.file_type }}
                         </div>
 
+                        <div class="mb-3" id="stock-date-container" style="display: none;">
+                            <label class="form-label fw-bold">Stock Date</label>
+                            {{ form.stock_date }}
+                            <small class="text-muted d-block mt-1">
+                                <i data-lucide="info" style="width:14px;height:14px;" class="me-1"></i>
+                                Specify the opening stock date. This date will be used for all records in the file.
+                            </small>
+                        </div>
+
                         <div class="mb-3">
                             <label class="form-label fw-bold">File</label>
                             {{ form.data_file }}
@@ -58,6 +67,24 @@
                             </button>
                         </div>
                     </form>
+                    
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const fileTypeSelect = document.getElementById('id_file_type');
+                            const stockDateContainer = document.getElementById('stock-date-container');
+                            
+                            function toggleStockDate() {
+                                if (fileTypeSelect.value === 'stock') {
+                                    stockDateContainer.style.display = 'block';
+                                } else {
+                                    stockDateContainer.style.display = 'none';
+                                }
+                            }
+                            
+                            fileTypeSelect.addEventListener('change', toggleStockDate);
+                            toggleStockDate(); // Initial state
+                        });
+                    </script>
                 </div>
             </div>
         </div>

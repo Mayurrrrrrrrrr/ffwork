@@ -179,11 +179,44 @@ class StoreCreateView(LoginRequiredMixin, CompanyAdminRequiredMixin, CreateView)
     form_class = StoreForm
     template_name = 'admin_portal/store_form.html'
     success_url = reverse_lazy('admin_portal:store_list')
+    
+    def get_available_locations(self):
+        """Fetch unique locations from StockSnapshot and SalesRecord for the company."""
+        from apps.analytics.models import StockSnapshot, SalesRecord
+        
+        company = self.request.user.company
+        locations = set()
+        
+        # Get unique locations from StockSnapshot
+        stock_locations = StockSnapshot.objects.filter(
+            company=company
+        ).exclude(location='').values_list('location', flat=True).distinct()
+        locations.update(stock_locations)
+        
+        # Get unique regions from SalesRecord (used as locations)
+        sales_regions = SalesRecord.objects.filter(
+            company=company
+        ).exclude(region='').values_list('region', flat=True).distinct()
+        locations.update(sales_regions)
+        
+        # Sort and return as list
+        return sorted([loc for loc in locations if loc])
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['available_locations'] = self.get_available_locations()
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['available_locations'] = self.get_available_locations()
+        return context
 
     def form_valid(self, form):
         form.instance.company = self.request.user.company
         messages.success(self.request, "Store created successfully!")
         return super().form_valid(form)
+
 
 
 class StoreUpdateView(LoginRequiredMixin, CompanyAdminRequiredMixin, UpdateView):
@@ -195,10 +228,43 @@ class StoreUpdateView(LoginRequiredMixin, CompanyAdminRequiredMixin, UpdateView)
 
     def get_queryset(self):
         return Store.objects.filter(company=self.request.user.company)
+    
+    def get_available_locations(self):
+        """Fetch unique locations from StockSnapshot and SalesRecord for the company."""
+        from apps.analytics.models import StockSnapshot, SalesRecord
+        
+        company = self.request.user.company
+        locations = set()
+        
+        # Get unique locations from StockSnapshot
+        stock_locations = StockSnapshot.objects.filter(
+            company=company
+        ).exclude(location='').values_list('location', flat=True).distinct()
+        locations.update(stock_locations)
+        
+        # Get unique regions from SalesRecord (used as locations)
+        sales_regions = SalesRecord.objects.filter(
+            company=company
+        ).exclude(region='').values_list('region', flat=True).distinct()
+        locations.update(sales_regions)
+        
+        # Sort and return as list
+        return sorted([loc for loc in locations if loc])
+    
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['available_locations'] = self.get_available_locations()
+        return kwargs
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['available_locations'] = self.get_available_locations()
+        return context
 
     def form_valid(self, form):
         messages.success(self.request, "Store updated successfully!")
         return super().form_valid(form)
+
 
 
 # --- Platform Admin: Company Management ---

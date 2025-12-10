@@ -13,7 +13,7 @@ from django.urls import reverse_lazy
 
 from .models import (Course, Module, Lesson, Quiz, Question, UserCourseProgress, 
                       UserLessonProgress, UserQuizAttempt, CourseCertificate)
-from .forms import CourseForm, ModuleForm
+from .forms import CourseForm, ModuleForm, LessonForm
 from apps.core.utils import log_audit_action
 
 class TrainerRequiredMixin(UserPassesTestMixin):
@@ -54,6 +54,35 @@ class ModuleCreateView(LoginRequiredMixin, TrainerRequiredMixin, CreateView):
     
     def get_success_url(self):
         return reverse_lazy('learning:course_detail', kwargs={'pk': self.course.pk})
+
+
+class LessonCreateView(LoginRequiredMixin, TrainerRequiredMixin, CreateView):
+    """Create a new lesson within a module."""
+    model = Lesson
+    form_class = LessonForm
+    template_name = 'learning/lesson_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.module = get_object_or_404(
+            Module, 
+            pk=kwargs['module_pk'], 
+            course__company=request.user.company
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['module'] = self.module
+        context['course'] = self.module.course
+        return context
+
+    def form_valid(self, form):
+        form.instance.module = self.module
+        messages.success(self.request, f"Lesson '{form.instance.title}' created successfully!")
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('learning:course_detail', kwargs={'pk': self.module.course.pk})
 
 
 class CourseListView(LoginRequiredMixin, ListView):
@@ -299,9 +328,17 @@ class LeaderboardView(LoginRequiredMixin, ListView):
         from django.db.models import Count, Avg, Q
         from apps.core.models import User
         
+        company = self.request.user.company
+        
+        # Handle platform admins without company
+        if not company:
+            # For platform admins, show empty leaderboard or all users
+            # Return empty to avoid showing cross-company data
+            return User.objects.none()
+        
         # Get all users in company with learning stats
         return User.objects.filter(
-            company=self.request.user.company,
+            company=company,
             is_active=True
         ).annotate(
             completed_courses=Count(
@@ -325,3 +362,4 @@ class LeaderboardView(LoginRequiredMixin, ListView):
                 break
         
         return context
+
