@@ -720,11 +720,17 @@ class DataPurgeView(LoginRequiredMixin, CompanyAdminRequiredMixin, TemplateView)
                 pass
         elif module_code == 'analytics':
             try:
-                from apps.analytics.models import SalesRecord, StockSnapshot
-                SalesRecord.objects.filter(company=company).delete()
-                StockSnapshot.objects.filter(company=company).delete()
-            except:
-                pass
+                from apps.analytics.models import SalesRecord, StockSnapshot, ImportLog, CRMContact
+                sales_count = SalesRecord.objects.filter(company=company).delete()[0]
+                stock_count = StockSnapshot.objects.filter(company=company).delete()[0]
+                import_count = ImportLog.objects.filter(company=company).delete()[0]
+                crm_count = CRMContact.objects.filter(company=company).delete()[0]
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Analytics purge for {company.company_code}: Sales={sales_count}, Stock={stock_count}, ImportLog={import_count}, CRM={crm_count}")
+            except Exception as e:
+                import logging
+                logging.getLogger(__name__).error(f"Analytics purge error: {e}")
         elif module_code == 'stock':
             try:
                 from apps.stock.models import TransferRequest
