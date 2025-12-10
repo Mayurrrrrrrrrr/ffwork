@@ -4,15 +4,57 @@ Views for Learning Management System module.
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import ListView, DetailView, View
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.views.generic import ListView, DetailView, View, CreateView
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Prefetch
+from django.urls import reverse_lazy
 
 from .models import (Course, Module, Lesson, Quiz, Question, UserCourseProgress, 
                       UserLessonProgress, UserQuizAttempt, CourseCertificate)
+from .forms import CourseForm, ModuleForm
 from apps.core.utils import log_audit_action
+
+class TrainerRequiredMixin(UserPassesTestMixin):
+    def test_func(self):
+        return self.request.user.is_superuser or \
+               self.request.user.has_role('admin') or \
+               self.request.user.has_role('trainer')
+
+class CourseCreateView(LoginRequiredMixin, TrainerRequiredMixin, CreateView):
+    model = Course
+    form_class = CourseForm
+    template_name = 'learning/course_form.html'
+    success_url = reverse_lazy('learning:catalog')
+
+    def form_valid(self, form):
+        form.instance.company = self.request.user.company
+        messages.success(self.request, "Course created successfully!")
+        return super().form_valid(form)
+
+class ModuleCreateView(LoginRequiredMixin, TrainerRequiredMixin, CreateView):
+    model = Module
+    form_class = ModuleForm
+    template_name = 'learning/module_form.html'
+    
+    def dispatch(self, request, *args, **kwargs):
+        self.course = get_object_or_404(Course, pk=kwargs['pk'], company=request.user.company)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['course'] = self.course
+        return context
+
+    def form_valid(self, form):
+        form.instance.course = self.course
+        messages.success(self.request, "Module added successfully!")
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('learning:course_detail', kwargs={'pk': self.course.pk})
+
 
 class CourseListView(LoginRequiredMixin, ListView):
     """
@@ -32,6 +74,14 @@ class CourseListView(LoginRequiredMixin, ListView):
             Prefetch('student_progress', queryset=UserCourseProgress.objects.filter(user=user), to_attr='user_progress')
         )
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context['can_create_course'] = user.is_superuser or \
+                                       user.has_role('admin') or \
+                                       user.has_role('trainer')
+        return context
+
 class CourseDetailView(LoginRequiredMixin, DetailView):
     """
     Course dashboard showing modules, lessons, and progress.
@@ -47,6 +97,11 @@ class CourseDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         course = self.object
+        
+        # Permissions
+        context['can_add_module'] = user.is_superuser or \
+                                    user.has_role('admin') or \
+                                    user.has_role('trainer')
         
         # Get or create progress record
         progress, created = UserCourseProgress.objects.get_or_create(user=user, course=course)

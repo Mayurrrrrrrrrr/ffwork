@@ -32,24 +32,23 @@
                     <label class="form-label small">Stock Snapshot Date</label>
                     <select name="stock_date" class="form-select form-select-sm">
                         <option value="">Latest</option>
-                        {% for d in available_stock_dates %}<option value="{{ d|date:'Y-m-d' }}" {% if current_filters.stock_date == d|date:"Y-m-d" %}selected{% endif %}>{{ d|date:"d M Y" }}
-                        </option>{% endfor %}
+                        {% for d in available_stock_dates %}
+                        <option value="{{ d|date:'Y-m-d' }}" {% if current_filters.stock_date == d|date:"Y-m-d" %}selected{% endif %}>{{ d|date:"d M Y" }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small">Category</label>
                     <select name="category" class="form-select form-select-sm">
                         <option value="">All</option>
-                        {% for c in filters.categories %}<option value="{{ c }}" {% if current_filters.category == c
-                            %}selected{% endif %}>{{ c }}</option>{% endfor %}
+                        {% for c in filters.categories %}<option value="{{ c }}" {% if current_filters.category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
                     </select>
                 </div>
                 <div class="col-md-2">
                     <label class="form-label small">Location</label>
                     <select name="location" class="form-select form-select-sm">
                         <option value="">All</option>
-                        {% for l in filters.locations %}<option value="{{ l }}" {% if current_filters.location == l
-                            %}selected{% endif %}>{{ l }}</option>{% endfor %}
+                        {% for l in filters.locations %}<option value="{{ l }}" {% if current_filters.location == l %}selected{% endif %}>{{ l }}</option>{% endfor %}
                     </select>
                 </div>
                 <div class="col-md-2">
@@ -86,10 +85,7 @@
                             <td class="text-end">{{ c.stock_qty|default:0 }}</td>
                             <td class="text-end">₹{{ c.stock_value|floatformat:0|default:0 }}</td>
                             <td class="text-end">
-                                <span
-                                    class="badge {% if c.sellthrough_pct >= 50 %}bg-success{% elif c.sellthrough_pct >= 25 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
-                                    {{ c.sellthrough_pct }}%
-                                </span>
+                                <span class="badge {% if c.sellthrough_pct >= 50 %}bg-success{% elif c.sellthrough_pct >= 25 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ c.sellthrough_pct }}%</span>
                             </td>
                         </tr>
                         {% empty %}
@@ -130,10 +126,7 @@
                             <td class="text-end">{{ s.stock_qty|default:0 }}</td>
                             <td class="text-end">₹{{ s.stock_value|floatformat:0|default:0 }}</td>
                             <td class="text-end">
-                                <span
-                                    class="badge {% if s.sellthrough_pct >= 50 %}bg-success{% elif s.sellthrough_pct >= 25 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
-                                    {{ s.sellthrough_pct }}%
-                                </span>
+                                <span class="badge {% if s.sellthrough_pct >= 50 %}bg-success{% elif s.sellthrough_pct >= 25 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ s.sellthrough_pct }}%</span>
                             </td>
                         </tr>
                         {% endfor %}

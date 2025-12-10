@@ -67,10 +67,13 @@
                     </thead>
                     <tbody>
                         {% for s in salesperson_stats %}
-                        <tr {% if s.rank <= 3 %}class="table-success" {% endif %}>
+                        <tr {% if s.rank <= 3 %}class="table-success"{% endif %}>
                             <td>
-                                {% if s.rank  ==  1 %}🥇{% elif s.rank == 2 %}🥈{% elif s.rank == 3 %}🥉{% else %}{{
-                                s.rank }}{% endif %}
+                                {% if s.rank == 1 %}🥇
+                                {% elif s.rank == 2 %}🥈
+                                {% elif s.rank == 3 %}🥉
+                                {% else %}{{ s.rank }}
+                                {% endif %}
                             </td>
                             <td><strong>{{ s.sales_person }}</strong></td>
                             <td class="text-end">₹{{ s.revenue|floatformat:0|default:0 }}</td>
@@ -81,8 +84,7 @@
                             <td class="text-end">{{ s.avg_discount|floatformat:1|default:0 }}%</td>
                             <td class="text-end">
                                 <div class="progress" style="width:80px; height:20px;">
-                                    <div class="progress-bar bg-primary" style="width:{{ s.contribution }}%">{{
-                                        s.contribution }}%</div>
+                                    <div class="progress-bar bg-primary" style="width: {{ s.contribution|default:0 }}%;">{{ s.contribution|default:0 }}%</div>
                                 </div>
                             </td>
                         </tr>
