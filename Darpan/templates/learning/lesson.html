@@ -14,7 +14,8 @@
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{% url 'learning:catalog' %}">Catalog</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'learning:course_detail' lesson.module.course.pk %}">{{ lesson.module.course.title }}</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'learning:course_detail' lesson.module.course.pk %}">{{
+                            lesson.module.course.title }}</a></li>
                     <li class="breadcrumb-item active">{{ lesson.title }}</li>
                 </ol>
             </nav>
@@ -176,9 +177,10 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const isCompleted = {{ is_completed| yesno: 'true,false'
+        const isCompleted = {{ is_completed| yesno: "true,false"
     }};
     const lessonType = '{{ lesson.content_type }}';
+
     const completeForm = document.getElementById('complete-form');
     const progressText = document.getElementById('progress-text');
     const completeBadge = document.getElementById('completion-badge');
