@@ -29,7 +29,7 @@
                             </thead>
                             <tbody>
                                 {% for user in leaderboard %}
-                                <tr {% if user.id==request.user.id %}class="table-success" {% endif %}>
+                                <tr {% if user.id == request.user.id %}class="table-success" {% endif %}>
                                     <td class="text-center">
                                         {% if user.rank == 1 %}
                                         <span class="badge bg-warning text-dark" style="font-size: 1.2rem;">
