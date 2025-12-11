@@ -2,9 +2,6 @@
 
 {% block title %}Analytics Dashboard - MIS{% endblock %}
 
-{% block navbar %}
-{% include "base/navbar.html" %}
-{% endblock %}
 
 {% block content %}
 <style>
@@ -96,9 +93,11 @@
             <small class="text-muted">Multi-Dimensional Business Intelligence</small>
         </div>
         <div class="d-flex gap-2">
+            {% if user.is_company_admin %}
             <a href="{% url 'analytics:import' %}" class="btn btn-primary">
                 <i data-lucide="upload" style="width:16px;"></i> Import Data
             </a>
+            {% endif %}
         </div>
     </div>
 
@@ -310,8 +309,7 @@
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">No sales data yet. <a
-                                        href="{% url 'analytics:import' %}">Import sales data</a></td>
+                                <td colspan="5" class="text-center py-4 text-muted">No sales data yet.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -376,12 +374,14 @@
                         <a href="{% url 'analytics:stock_kpis' %}" class="btn btn-outline-success">
                             <i data-lucide="package" class="me-2" style="width:18px;"></i>Stock KPIs
                         </a>
+                        {% if user.is_company_admin %}
                         <a href="{% url 'analytics:import' %}" class="btn btn-outline-dark">
                             <i data-lucide="upload" class="me-2" style="width:18px;"></i>Import Data
                         </a>
                         <a href="{% url 'analytics:import_history' %}" class="btn btn-outline-secondary">
                             <i data-lucide="history" class="me-2" style="width:18px;"></i>Import History
                         </a>
+                        {% endif %}
                         <a href="{% url 'tools:stock_lookup' %}" class="btn btn-outline-info">
                             <i data-lucide="search" class="me-2" style="width:18px;"></i>Stock Lookup
                         </a>

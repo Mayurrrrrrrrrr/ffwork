@@ -1,99 +1,18 @@
 <nav class="navbar navbar-dark"
-    style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 0.5rem 1rem;">
+    style="background: linear-gradient(135deg, #1e3a5f 0%, #2d5a87 100%); padding: 0.5rem 1rem; position: fixed; top: 0; left: 0; right: 0; z-index: 1100;">
     <div class="container-fluid d-flex align-items-center">
-        <a class="navbar-brand me-4" href="{% url 'dashboard:home' %}">
+
+        <!-- Sidebar Toggle for Mobile -->
+        <button class="btn btn-link text-white me-2 d-lg-none" type="button" onclick="toggleSidebar()">
+            <i data-lucide="menu" style="width: 20px; height: 20px;"></i>
+        </button>
+
+        <!-- Brand -->
+        <a class="navbar-brand me-auto" href="{% url 'dashboard:home' %}">
             <strong>Darpan</strong> Portal
         </a>
 
         {% if user.is_authenticated %}
-        <!-- Navigation Links - Always Visible -->
-        <ul class="navbar-nav flex-row flex-wrap align-items-center gap-1" style="flex: 1;">
-            {% if not user.is_platform_admin %}
-            <!-- Company-specific modules - hidden from platform admin -->
-            <li class="nav-item">
-                <a class="nav-link px-2 py-1" href="{% url 'analytics:dashboard' %}" style="font-size: 0.85rem;">
-                    <i data-lucide="bar-chart-2" style="width:14px;height:14px;" class="me-1"></i>Analytics
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link px-2 py-1" href="{% url 'stock:product_list' %}" style="font-size: 0.85rem;">
-                    <i data-lucide="box" style="width:14px;height:14px;" class="me-1"></i>Stock
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link px-2 py-1" href="{% url 'expenses:list' %}" style="font-size: 0.85rem;">
-                    <i data-lucide="receipt" style="width:14px;height:14px;" class="me-1"></i>Expenses
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link px-2 py-1" href="{% url 'tasks:list' %}" style="font-size: 0.85rem;">
-                    <i data-lucide="check-square" style="width:14px;height:14px;" class="me-1"></i>Tasks
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link px-2 py-1" href="{% url 'analytics:reports_menu' %}" style="font-size: 0.85rem;">
-                    <i data-lucide="file-bar-chart" style="width:14px;height:14px;" class="me-1"></i>MIS Reports
-                </a>
-            </li>
-
-            <!-- More Dropdown - Company modules -->
-            <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle px-2 py-1" href="#" id="modulesDropdown" role="button"
-                    data-bs-toggle="dropdown" style="font-size: 0.85rem;">
-                    More
-                </a>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="{% url 'btl:list' %}">
-                            <i data-lucide="megaphone" style="width:14px;height:14px;" class="me-2"></i>BTL Marketing
-                        </a></li>
-                    <li><a class="dropdown-item" href="{% url 'learning:catalog' %}">
-                            <i data-lucide="book-open" style="width:14px;height:14px;" class="me-2"></i>Learning
-                        </a></li>
-                    <li><a class="dropdown-item" href="{% url 'purchasing:po_list' %}">
-                            <i data-lucide="shopping-cart" style="width:14px;height:14px;" class="me-2"></i>Purchasing
-                        </a></li>
-                    <li><a class="dropdown-item" href="{% url 'stock:transfer_list' %}">
-                            <i data-lucide="truck" style="width:14px;height:14px;" class="me-2"></i>Stock Transfers
-                        </a></li>
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li><a class="dropdown-item" href="{% url 'reports:dashboard' %}">
-                            <i data-lucide="file-text" style="width:14px;height:14px;" class="me-2"></i>Reports
-                        </a></li>
-                    <li><a class="dropdown-item" href="{% url 'tools:index' %}">
-                            <i data-lucide="wrench" style="width:14px;height:14px;" class="me-2"></i>Tools
-                        </a></li>
-                    <li><a class="dropdown-item" href="{% url 'referrals:list' %}">
-                            <i data-lucide="users" style="width:14px;height:14px;" class="me-2"></i>Referrals
-                        </a></li>
-                    {% if user.is_company_admin %}
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-                    <li><a class="dropdown-item" href="{% url 'admin_portal:dashboard' %}">
-                            <i data-lucide="shield" style="width:14px;height:14px;" class="me-2"></i>Admin Portal
-                        </a></li>
-                    {% endif %}
-                </ul>
-            </li>
-            {% else %}
-            <!-- Platform Admin: Limited navigation -->
-            <li class="nav-item">
-                <a class="nav-link px-2 py-1" href="{% url 'admin_portal:platform_dashboard' %}"
-                    style="font-size: 0.85rem;">
-                    <i data-lucide="building" style="width:14px;height:14px;" class="me-1"></i>Companies
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link px-2 py-1" href="{% url 'admin_portal:company_create' %}"
-                    style="font-size: 0.85rem;">
-                    <i data-lucide="plus" style="width:14px;height:14px;" class="me-1"></i>Add Company
-                </a>
-            </li>
-            {% endif %}
-        </ul>
-
         <!-- User Dropdown - Right Side -->
         <ul class="navbar-nav ms-auto">
             <li class="nav-item dropdown">
@@ -103,15 +22,34 @@
                     {{ user.get_short_name }}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{% url 'authentication:change_password' %}">Change Password</a>
+                    <li class="px-3 py-2 text-muted small">
+                        {{ user.email }}
+                        {% if user.company %}<br><strong>{{ user.company.name }}</strong>{% endif %}
                     </li>
                     <li>
                         <hr class="dropdown-divider">
                     </li>
-                    <li><a class="dropdown-item" href="{% url 'authentication:logout' %}">Logout</a></li>
+                    <li><a class="dropdown-item" href="{% url 'authentication:change_password' %}">
+                            <i data-lucide="key" style="width:14px;height:14px;" class="me-2"></i>Change Password
+                        </a></li>
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'authentication:logout' %}">
+                            <i data-lucide="log-out" style="width:14px;height:14px;" class="me-2"></i>Logout
+                        </a></li>
                 </ul>
             </li>
         </ul>
         {% endif %}
     </div>
 </nav>
+
+<script>
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.toggle('show');
+        }
+    }
+</script>

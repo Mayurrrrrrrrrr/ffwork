@@ -1,0 +1,167 @@
+<!-- Sidebar Navigation -->
+<aside id="sidebar" class="sidebar bg-white border-end d-flex flex-column"
+    style="width: 250px; min-height: calc(100vh - 56px); position: fixed; top: 56px; left: 0; z-index: 1000; transition: transform 0.3s ease-in-out;">
+
+    <div class="sidebar-content flex-grow-1 py-3">
+        {% if user.is_authenticated and not user.is_platform_admin %}
+
+        <!-- Main Navigation -->
+        <div class="sidebar-section mb-3">
+            <div class="px-3 py-2 text-uppercase text-muted small fw-bold"
+                style="font-size: 0.7rem; letter-spacing: 0.5px;">Main</div>
+            <nav class="nav flex-column">
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'dashboard:home' %}">
+                    <i data-lucide="home" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Dashboard
+                </a>
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'analytics:dashboard' %}">
+                    <i data-lucide="bar-chart-2" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Analytics
+                </a>
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'analytics:reports_menu' %}">
+                    <i data-lucide="file-bar-chart" class="me-2" style="width: 18px; height: 18px;"></i>
+                    MIS Reports
+                </a>
+            </nav>
+        </div>
+
+        <!-- Operations -->
+        <div class="sidebar-section mb-3">
+            <div class="px-3 py-2 text-uppercase text-muted small fw-bold"
+                style="font-size: 0.7rem; letter-spacing: 0.5px;">Operations</div>
+            <nav class="nav flex-column">
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'expenses:list' %}">
+                    <i data-lucide="receipt" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Expenses
+                </a>
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'tasks:list' %}">
+                    <i data-lucide="check-square" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Tasks
+                </a>
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'purchasing:po_list' %}">
+                    <i data-lucide="shopping-cart" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Purchasing
+                </a>
+            </nav>
+        </div>
+
+        <!-- Modules -->
+        <div class="sidebar-section mb-3">
+            <div class="px-3 py-2 text-uppercase text-muted small fw-bold"
+                style="font-size: 0.7rem; letter-spacing: 0.5px;">Modules</div>
+            <nav class="nav flex-column">
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'btl:list' %}">
+                    <i data-lucide="megaphone" class="me-2" style="width: 18px; height: 18px;"></i>
+                    BTL Marketing
+                </a>
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'learning:catalog' %}">
+                    <i data-lucide="book-open" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Learning
+                </a>
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'referrals:list' %}">
+                    <i data-lucide="users" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Referrals
+                </a>
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'tools:index' %}">
+                    <i data-lucide="wrench" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Tools
+                </a>
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'reports:dashboard' %}">
+                    <i data-lucide="file-text" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Reports
+                </a>
+            </nav>
+        </div>
+
+        {% if user.is_company_admin %}
+        <!-- Admin Section -->
+        <div class="sidebar-section mb-3">
+            <div class="px-3 py-2 text-uppercase text-muted small fw-bold"
+                style="font-size: 0.7rem; letter-spacing: 0.5px;">Admin</div>
+            <nav class="nav flex-column">
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'admin_portal:dashboard' %}">
+                    <i data-lucide="shield" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Admin Portal
+                </a>
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'analytics:import' %}">
+                    <i data-lucide="upload" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Data Import
+                </a>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% elif user.is_platform_admin %}
+        <!-- Platform Admin Navigation -->
+        <div class="sidebar-section mb-3">
+            <div class="px-3 py-2 text-uppercase text-muted small fw-bold"
+                style="font-size: 0.7rem; letter-spacing: 0.5px;">Platform Admin</div>
+            <nav class="nav flex-column">
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'admin_portal:platform_dashboard' %}">
+                    <i data-lucide="building" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Companies
+                </a>
+                <a class="nav-link px-3 py-2 text-dark d-flex align-items-center sidebar-link"
+                    href="{% url 'admin_portal:company_create' %}">
+                    <i data-lucide="plus" class="me-2" style="width: 18px; height: 18px;"></i>
+                    Add Company
+                </a>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</aside>
+
+<style>
+    .sidebar-link {
+        border-radius: 6px;
+        margin: 0 8px;
+        transition: all 0.2s ease;
+    }
+
+    .sidebar-link:hover {
+        background-color: #f1f5f9;
+        color: #1e40af !important;
+    }
+
+    .sidebar-link.active {
+        background-color: #e0e7ff;
+        color: #3730a3 !important;
+        font-weight: 500;
+    }
+
+    /* Main content adjustment for sidebar */
+    .main-content-with-sidebar {
+        margin-left: 250px;
+        transition: margin-left 0.3s ease-in-out;
+    }
+
+    /* Mobile responsive */
+    @media (max-width: 992px) {
+        #sidebar {
+            transform: translateX(-100%);
+        }
+
+        #sidebar.show {
+            transform: translateX(0);
+        }
+
+        .main-content-with-sidebar {
+            margin-left: 0;
+        }
+    }
+</style>

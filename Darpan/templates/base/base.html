@@ -32,7 +32,7 @@
     <!-- Custom Design System CSS -->
     <link rel="stylesheet" href="{% static 'css/design-system.css' %}">
 
-    <!-- Inline Styles (Legacy Support) -->
+    <!-- Base Layout Styles -->
     <style>
         :root {
             --bg-light: #f8f9fa;
@@ -41,11 +41,14 @@
             --text-secondary: #6c757d;
             --border-color: #e9ecef;
             --accent-primary: #6366f1;
+            --navbar-height: 56px;
+            --sidebar-width: 250px;
         }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: var(--bg-light);
+            padding-top: var(--navbar-height);
         }
 
         .card {
@@ -53,28 +56,48 @@
             border-radius: 0.75rem;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
+
+        /* Main content area - shifts for sidebar on desktop */
+        .main-wrapper {
+            min-height: calc(100vh - var(--navbar-height));
+        }
+
+        @media (min-width: 992px) {
+            .main-wrapper {
+                margin-left: var(--sidebar-width);
+            }
+        }
     </style>
 
     {% block extra_css %}{% endblock %}
 </head>
 
 <body>
-    {% block navbar %}{% endblock %}
+    <!-- Top Navbar -->
+    {% include 'base/navbar.html' %}
 
-    {% block messages %}
-    {% if messages %}
-    <div class="container mt-3">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endfor %}
-    </div>
+    <!-- Sidebar Navigation (for authenticated users) -->
+    {% if user.is_authenticated %}
+    {% include 'base/sidebar.html' %}
     {% endif %}
-    {% endblock %}
 
-    {% block content %}{% endblock %}
+    <!-- Main Content Wrapper -->
+    <div class="main-wrapper">
+        {% block messages %}
+        {% if messages %}
+        <div class="container-fluid mt-3 px-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endblock %}
+
+        {% block content %}{% endblock %}
+    </div>
 
     <!-- AI Chat Widget -->
     {% if user.is_authenticated %}
