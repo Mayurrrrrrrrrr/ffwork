@@ -118,6 +118,12 @@ class CourseListView(LoginRequiredMixin, ListView):
         context['can_create_course'] = user.is_superuser or \
                                        user.has_role('admin') or \
                                        user.has_role('trainer')
+        
+        # Stats for the catalog dashboard
+        user_progress = UserCourseProgress.objects.filter(user=user, course__company=user.company)
+        context['completed_courses_count'] = user_progress.filter(status='completed').count()
+        context['in_progress_count'] = user_progress.filter(status='in_progress').count()
+        
         return context
 
 class CourseDetailView(LoginRequiredMixin, DetailView):

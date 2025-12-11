@@ -1,41 +1,303 @@
-<!-- Report Filters Partial - Include in all report templates -->
+<!-- Report Filters Partial - Multi-Select Dropdowns with Checkboxes -->
 <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
-        <form method="get" class="row g-3 align-items-end">
+        <form method="get" id="filterForm" class="row g-3 align-items-end">
             <div class="col-md-2">
-                <label class="form-label small">Date From</label>
+                <label class="form-label small fw-bold">Date From</label>
                 <input type="date" name="date_from" class="form-control form-control-sm"
                     value="{{ current_filters.date_from }}">
             </div>
             <div class="col-md-2">
-                <label class="form-label small">Date To</label>
+                <label class="form-label small fw-bold">Date To</label>
                 <input type="date" name="date_to" class="form-control form-control-sm"
                     value="{{ current_filters.date_to }}">
             </div>
+
+            <!-- Category Multi-Select -->
             <div class="col-md-2">
-                <label class="form-label small">Category</label>
-                <select name="category" class="form-select form-select-sm">
-                    <option value="">All</option>
-                    {% for c in filters.categories %}<option value="{{ c }}" {% if current_filters.category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
-                </select>
+                <label class="form-label small fw-bold">Category</label>
+                <div class="multi-select-dropdown" data-name="category">
+                    <button type="button" class="form-select form-select-sm text-start multi-select-btn"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="selected-text">All Categories</span>
+                    </button>
+                    <div class="dropdown-menu p-2 multi-select-menu">
+                        <div class="dropdown-search mb-2">
+                            <input type="text" class="form-control form-control-sm" placeholder="Search..."
+                                onkeyup="filterDropdown(this)">
+                        </div>
+                        <div class="dropdown-options" style="max-height: 200px; overflow-y: auto;">
+                            {% for c in filters.categories %}
+                            <label class="dropdown-item d-flex align-items-center py-1">
+                                <input type="checkbox" name="category" value="{{ c }}"
+                                    class="form-check-input me-2 mt-0" {% if c in current_filters.category %}checked{%
+                                    endif %}>
+                                <span class="small">{{ c }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <div class="dropdown-footer border-top mt-2 pt-2 d-flex gap-1">
+                            <button type="button" class="btn btn-sm btn-outline-secondary flex-fill"
+                                onclick="clearSelection(this)">Clear</button>
+                            <button type="button" class="btn btn-sm btn-primary flex-fill"
+                                onclick="applySelection(this)">Apply</button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Location Multi-Select -->
             <div class="col-md-2">
-                <label class="form-label small">Location</label>
-                <select name="location" class="form-select form-select-sm">
-                    <option value="">All</option>
-                    {% for l in filters.locations %}<option value="{{ l }}" {% if current_filters.location == l %}selected{% endif %}>{{ l }}</option>{% endfor %}
-                </select>
+                <label class="form-label small fw-bold">Location</label>
+                <div class="multi-select-dropdown" data-name="location">
+                    <button type="button" class="form-select form-select-sm text-start multi-select-btn"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="selected-text">All Locations</span>
+                    </button>
+                    <div class="dropdown-menu p-2 multi-select-menu">
+                        <div class="dropdown-search mb-2">
+                            <input type="text" class="form-control form-control-sm" placeholder="Search..."
+                                onkeyup="filterDropdown(this)">
+                        </div>
+                        <div class="dropdown-options" style="max-height: 200px; overflow-y: auto;">
+                            {% for l in filters.locations %}
+                            <label class="dropdown-item d-flex align-items-center py-1">
+                                <input type="checkbox" name="location" value="{{ l }}"
+                                    class="form-check-input me-2 mt-0" {% if l in current_filters.location %}checked{%
+                                    endif %}>
+                                <span class="small">{{ l }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <div class="dropdown-footer border-top mt-2 pt-2 d-flex gap-1">
+                            <button type="button" class="btn btn-sm btn-outline-secondary flex-fill"
+                                onclick="clearSelection(this)">Clear</button>
+                            <button type="button" class="btn btn-sm btn-primary flex-fill"
+                                onclick="applySelection(this)">Apply</button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Metal Multi-Select -->
             <div class="col-md-2">
-                <label class="form-label small">Metal</label>
-                <select name="metal" class="form-select form-select-sm">
-                    <option value="">All</option>
-                    {% for m in filters.metals %}<option value="{{ m }}" {% if current_filters.metal == m %}selected{% endif %}>{{ m }}</option>{% endfor %}
-                </select>
+                <label class="form-label small fw-bold">Metal</label>
+                <div class="multi-select-dropdown" data-name="metal">
+                    <button type="button" class="form-select form-select-sm text-start multi-select-btn"
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="selected-text">All Metals</span>
+                    </button>
+                    <div class="dropdown-menu p-2 multi-select-menu">
+                        <div class="dropdown-options" style="max-height: 200px; overflow-y: auto;">
+                            {% for m in filters.metals %}
+                            <label class="dropdown-item d-flex align-items-center py-1">
+                                <input type="checkbox" name="metal" value="{{ m }}" class="form-check-input me-2 mt-0"
+                                    {% if m in current_filters.metal %}checked{% endif %}>
+                                <span class="small">{{ m }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                        <div class="dropdown-footer border-top mt-2 pt-2 d-flex gap-1">
+                            <button type="button" class="btn btn-sm btn-outline-secondary flex-fill"
+                                onclick="clearSelection(this)">Clear</button>
+                            <button type="button" class="btn btn-sm btn-primary flex-fill"
+                                onclick="applySelection(this)">Apply</button>
+                        </div>
+                    </div>
+                </div>
             </div>
+
             <div class="col-md-2">
-                <button type="submit" class="btn btn-primary btn-sm w-100">Apply</button>
+                <button type="submit" class="btn btn-primary btn-sm w-100">
+                    <i data-lucide="filter" class="me-1" style="width: 14px; height: 14px;"></i> Apply Filters
+                </button>
             </div>
         </form>
+
+        <!-- Active Filters Display -->
+        <div id="activeFilters" class="mt-3 d-flex flex-wrap gap-2" style="display: none !important;"></div>
     </div>
 </div>
+
+<style>
+    .multi-select-dropdown {
+        position: relative;
+    }
+
+    .multi-select-btn {
+        background-color: #fff;
+        border: 1px solid #ced4da;
+        cursor: pointer;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    .multi-select-btn:hover {
+        border-color: #86b7fe;
+    }
+
+    .multi-select-menu {
+        min-width: 220px;
+        max-width: 300px;
+    }
+
+    .multi-select-menu .dropdown-item {
+        cursor: pointer;
+        border-radius: 4px;
+    }
+
+    .multi-select-menu .dropdown-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .multi-select-menu .form-check-input {
+        cursor: pointer;
+    }
+
+    .multi-select-menu .form-check-input:checked {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    .selected-badge {
+        background-color: #e7f1ff;
+        color: #0d6efd;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 500;
+    }
+
+    .filter-tag {
+        background-color: #e9ecef;
+        color: #495057;
+        padding: 4px 10px;
+        border-radius: 16px;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .filter-tag .remove-tag {
+        cursor: pointer;
+        opacity: 0.7;
+    }
+
+    .filter-tag .remove-tag:hover {
+        opacity: 1;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize multi-select dropdowns
+        initMultiSelectDropdowns();
+
+        // Re-initialize lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    });
+
+    function initMultiSelectDropdowns() {
+        document.querySelectorAll('.multi-select-dropdown').forEach(dropdown => {
+            const btn = dropdown.querySelector('.multi-select-btn');
+            const menu = dropdown.querySelector('.multi-select-menu');
+            const nameAttr = dropdown.dataset.name;
+
+            // Update button text based on selected items
+            updateSelectedText(dropdown);
+
+            // Prevent dropdown from closing when clicking inside
+            menu.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+
+            // Update text when checkboxes change
+            dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                cb.addEventListener('change', function () {
+                    updateSelectedText(dropdown);
+                });
+            });
+        });
+    }
+
+    function updateSelectedText(dropdown) {
+        const btn = dropdown.querySelector('.multi-select-btn .selected-text');
+        const name = dropdown.dataset.name;
+        const checked = dropdown.querySelectorAll('input[type="checkbox"]:checked');
+
+        if (checked.length === 0) {
+            btn.textContent = 'All ' + capitalizeFirst(name) + 's';
+        } else if (checked.length === 1) {
+            btn.textContent = checked[0].nextElementSibling.textContent.trim();
+        } else {
+            btn.innerHTML = `<span class="selected-badge">${checked.length} selected</span>`;
+        }
+    }
+
+    function capitalizeFirst(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function filterDropdown(input) {
+        const filter = input.value.toLowerCase();
+        const options = input.closest('.multi-select-menu').querySelectorAll('.dropdown-options label');
+
+        options.forEach(option => {
+            const text = option.textContent.toLowerCase();
+            option.style.display = text.includes(filter) ? '' : 'none';
+        });
+    }
+
+    function clearSelection(btn) {
+        const dropdown = btn.closest('.multi-select-dropdown');
+        dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.checked = false;
+        });
+        updateSelectedText(dropdown);
+    }
+
+    function applySelection(btn) {
+        // Close the dropdown
+        const dropdownMenu = btn.closest('.dropdown-menu');
+        const bsDropdown = bootstrap.Dropdown.getInstance(dropdownMenu.previousElementSibling);
+        if (bsDropdown) {
+            bsDropdown.hide();
+        }
+    }
+
+    // Show active filters
+    function showActiveFilters() {
+        const container = document.getElementById('activeFilters');
+        const checked = document.querySelectorAll('.multi-select-dropdown input[type="checkbox"]:checked');
+
+        if (checked.length > 0) {
+            container.style.display = 'flex';
+            container.innerHTML = '';
+
+            checked.forEach(cb => {
+                const tag = document.createElement('span');
+                tag.className = 'filter-tag';
+                tag.innerHTML = `${cb.nextElementSibling.textContent.trim()} <span class="remove-tag" onclick="removeFilter(this, '${cb.name}', '${cb.value}')">&times;</span>`;
+                container.appendChild(tag);
+            });
+        } else {
+            container.style.display = 'none';
+        }
+    }
+
+    function removeFilter(el, name, value) {
+        const cb = document.querySelector(`input[name="${name}"][value="${value}"]`);
+        if (cb) {
+            cb.checked = false;
+            updateSelectedText(cb.closest('.multi-select-dropdown'));
+        }
+        el.parentElement.remove();
+
+        // Submit form to apply changes
+        document.getElementById('filterForm').submit();
+    }
+</script>

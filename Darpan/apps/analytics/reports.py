@@ -82,39 +82,52 @@ def apply_filters(queryset, request, is_stock=False):
                 queryset = queryset.filter(transaction_date__lte=d)
         except: pass
     
-    # Other filters
-    category = request.GET.get('category')
-    if category:
-        if is_stock:
-            queryset = queryset.filter(category=category)
-        else:
-            queryset = queryset.filter(product_category=category)
+    # Other filters - using getlist for multi-select support
+    categories = request.GET.getlist('category')
+    if categories:
+        # Filter out empty strings
+        categories = [c for c in categories if c]
+        if categories:
+            if is_stock:
+                queryset = queryset.filter(category__in=categories)
+            else:
+                queryset = queryset.filter(product_category__in=categories)
     
-    subcategory = request.GET.get('subcategory')
-    if subcategory:
-        if is_stock:
-            queryset = queryset.filter(sub_category=subcategory)
-        else:
-            queryset = queryset.filter(product_subcategory=subcategory)
+    subcategories = request.GET.getlist('subcategory')
+    if subcategories:
+        subcategories = [s for s in subcategories if s]
+        if subcategories:
+            if is_stock:
+                queryset = queryset.filter(sub_category__in=subcategories)
+            else:
+                queryset = queryset.filter(product_subcategory__in=subcategories)
     
-    collection = request.GET.get('collection')
-    if collection and not is_stock:
-        queryset = queryset.filter(collection=collection)
+    collections = request.GET.getlist('collection')
+    if collections and not is_stock:
+        collections = [c for c in collections if c]
+        if collections:
+            queryset = queryset.filter(collection__in=collections)
     
-    location = request.GET.get('location')
-    if location:
-        if is_stock:
-            queryset = queryset.filter(location=location)
-        else:
-            queryset = queryset.filter(region=location)
+    locations = request.GET.getlist('location')
+    if locations:
+        locations = [l for l in locations if l]
+        if locations:
+            if is_stock:
+                queryset = queryset.filter(location__in=locations)
+            else:
+                queryset = queryset.filter(region__in=locations)
     
-    metal = request.GET.get('metal')
-    if metal:
-        queryset = queryset.filter(base_metal=metal)
+    metals = request.GET.getlist('metal')
+    if metals:
+        metals = [m for m in metals if m]
+        if metals:
+            queryset = queryset.filter(base_metal__in=metals)
     
-    salesperson = request.GET.get('salesperson')
-    if salesperson and not is_stock:
-        queryset = queryset.filter(sales_person=salesperson)
+    salespersons = request.GET.getlist('salesperson')
+    if salespersons and not is_stock:
+        salespersons = [s for s in salespersons if s]
+        if salespersons:
+            queryset = queryset.filter(sales_person__in=salespersons)
     
     return queryset
 

@@ -7,65 +7,177 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Learning Catalog</h2>
-        {% if can_create_course %}
-        <a href="{% url 'learning:course_create' %}" class="btn btn-primary">
-            <i data-lucide="plus-circle" class="me-1"></i> Create Course
-        </a>
-        {% endif %}
-    </div>
+<div class="container-fluid py-5"
+    style="background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%); min-height: 100vh;">
 
-    {% if courses %}
-    <div class="row g-4">
-        {% for course in courses %}
-        <div class="col-md-4">
-            <div class="card h-100 shadow-sm">
-                {% if course.thumbnail %}
-                <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}"
-                    style="height: 200px; object-fit: cover;">
-                {% else %}
-                <div class="bg-light d-flex align-items-center justify-content-center text-muted"
-                    style="height: 200px;">
-                    <i data-lucide="book-open" style="width: 48px; height: 48px;"></i>
-                </div>
+    <!-- Header Section -->
+    <div class="container">
+        <div class="row align-items-center mb-5">
+            <div class="col-lg-8">
+                <h1 class="display-5 fw-bold text-gray-800 mb-2">
+                    <i data-lucide="graduation-cap" class="me-3" style="width: 48px; height: 48px; color: #667eea;"></i>
+                    Learning Catalog
+                </h1>
+                <p class="lead text-muted mb-0">Explore courses designed to enhance your skills and knowledge</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                {% if can_create_course %}
+                <a href="{% url 'learning:course_create' %}" class="btn btn-primary btn-lg shadow-sm hover-lift">
+                    <i data-lucide="plus-circle" class="me-2" style="width: 20px; height: 20px;"></i> Create Course
+                </a>
                 {% endif %}
+                <a href="{% url 'learning:leaderboard' %}" class="btn btn-outline-primary btn-lg ms-2">
+                    <i data-lucide="trophy" class="me-2" style="width: 20px; height: 20px;"></i> Leaderboard
+                </a>
+            </div>
+        </div>
 
-                <div class="card-body d-flex flex-column">
-                    <h5 class="card-title">{{ course.title }}</h5>
-                    <p class="card-text text-muted flex-grow-1">{{ course.description|truncatewords:20 }}</p>
-
-                    <!-- Progress Bar -->
-                    {% with progress=course.user_progress.0 %}
-                    <div class="mt-3">
-                        <div class="d-flex justify-content-between small mb-1">
-                            <span>Progress</span>
-                            <span>{{ progress.progress_percent|default:"0" }}%</span>
+        <!-- Stats Row -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100"
+                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="card-body text-white d-flex align-items-center p-4">
+                        <div class="rounded-circle bg-white bg-opacity-20 p-3 me-3">
+                            <i data-lucide="book-open" style="width: 32px; height: 32px;"></i>
                         </div>
-                        <div class="progress" style="height: 6px;">
-                            <div class="progress-bar bg-success" role="progressbar"
-                                style="width: {{ progress.progress_percent|default:0 }}%"
-                                aria-valuenow="{{ progress.progress_percent|default:0 }}" aria-valuemin="0"
-                                aria-valuemax="100"></div>
+                        <div>
+                            <h3 class="fw-bold mb-0">{{ courses|length }}</h3>
+                            <small class="opacity-75">Available Courses</small>
                         </div>
                     </div>
-
-                    <a href="{% url 'learning:course_detail' course.pk %}" class="btn btn-outline-primary mt-3 w-100">
-                        {% if progress.status == 'not_started' or not progress %}Start Course{% else %}Continue
-                        Learning{% endif %}
-                    </a>
-                    {% endwith %}
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100"
+                    style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                    <div class="card-body text-white d-flex align-items-center p-4">
+                        <div class="rounded-circle bg-white bg-opacity-20 p-3 me-3">
+                            <i data-lucide="check-circle" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div>
+                            <h3 class="fw-bold mb-0">{{ completed_courses_count|default:0 }}</h3>
+                            <small class="opacity-75">Completed</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm h-100"
+                    style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="card-body text-white d-flex align-items-center p-4">
+                        <div class="rounded-circle bg-white bg-opacity-20 p-3 me-3">
+                            <i data-lucide="target" style="width: 32px; height: 32px;"></i>
+                        </div>
+                        <div>
+                            <h3 class="fw-bold mb-0">{{ in_progress_count|default:0 }}</h3>
+                            <small class="opacity-75">In Progress</small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        {% endfor %}
+
+        <!-- Courses Grid -->
+        {% if courses %}
+        <div class="row g-4">
+            {% for course in courses %}
+            <div class="col-lg-4 col-md-6">
+                <div class="card h-100 border-0 shadow-sm hover-lift overflow-hidden"
+                    style="border-radius: 16px; transition: all 0.3s ease;">
+                    <!-- Course Image -->
+                    <div class="position-relative">
+                        {% if course.thumbnail %}
+                        <img src="{{ course.thumbnail.url }}" class="card-img-top" alt="{{ course.title }}"
+                            style="height: 180px; object-fit: cover;">
+                        {% else %}
+                        <div class="d-flex align-items-center justify-content-center text-white"
+                            style="height: 180px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i data-lucide="book-open" style="width: 64px; height: 64px; opacity: 0.5;"></i>
+                        </div>
+                        {% endif %}
+
+                        <!-- Status Badge -->
+                        {% with progress=course.user_progress.0 %}
+                        {% if progress.status == 'completed' %}
+                        <span class="position-absolute top-0 end-0 m-2 badge bg-success rounded-pill px-3 py-2">
+                            <i data-lucide="check" style="width: 12px; height: 12px;" class="me-1"></i> Completed
+                        </span>
+                        {% elif progress.progress_percent > 0 %}
+                        <span
+                            class="position-absolute top-0 end-0 m-2 badge bg-warning text-dark rounded-pill px-3 py-2">
+                            <i data-lucide="play" style="width: 12px; height: 12px;" class="me-1"></i> In Progress
+                        </span>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+
+                    <div class="card-body d-flex flex-column p-4">
+                        <h5 class="card-title fw-bold text-gray-800 mb-2">{{ course.title }}</h5>
+                        <p class="card-text text-muted small flex-grow-1">{{ course.description|truncatewords:20 }}</p>
+
+                        <!-- Progress Bar -->
+                        {% with progress=course.user_progress.0 %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center small mb-2">
+                                <span class="text-muted">Progress</span>
+                                <span class="fw-bold text-primary">{{ progress.progress_percent|default:"0" }}%</span>
+                            </div>
+                            <div class="progress" style="height: 8px; border-radius: 4px;">
+                                <div class="progress-bar" role="progressbar"
+                                    style="width: {{ progress.progress_percent|default:0 }}%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 4px;"
+                                    aria-valuenow="{{ progress.progress_percent|default:0 }}" aria-valuemin="0"
+                                    aria-valuemax="100"></div>
+                            </div>
+                        </div>
+
+                        <a href="{% url 'learning:course_detail' course.pk %}" class="btn btn-primary w-100"
+                            style="border-radius: 8px;">
+                            {% if progress.status == 'not_started' or not progress %}
+                            <i data-lucide="play" class="me-2" style="width: 16px; height: 16px;"></i> Start Course
+                            {% elif progress.status == 'completed' %}
+                            <i data-lucide="refresh-cw" class="me-2" style="width: 16px; height: 16px;"></i> Review
+                            Course
+                            {% else %}
+                            <i data-lucide="arrow-right" class="me-2" style="width: 16px; height: 16px;"></i> Continue
+                            Learning
+                            {% endif %}
+                        </a>
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-5">
+            <div class="mb-4">
+                <div class="rounded-circle bg-light d-inline-flex align-items-center justify-content-center"
+                    style="width: 120px; height: 120px;">
+                    <i data-lucide="book-open" class="text-muted" style="width: 48px; height: 48px;"></i>
+                </div>
+            </div>
+            <h4 class="text-gray-800 fw-bold">No Courses Available</h4>
+            <p class="text-muted mb-4">Check back later for new learning content.</p>
+            {% if can_create_course %}
+            <a href="{% url 'learning:course_create' %}" class="btn btn-primary btn-lg">
+                <i data-lucide="plus-circle" class="me-2"></i> Create First Course
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
-    {% else %}
-    <div class="text-center py-5">
-        <i data-lucide="book-open" class="text-muted mb-3" style="width: 48px; height: 48px;"></i>
-        <p class="text-muted">No courses available at the moment.</p>
-    </div>
-    {% endif %}
 </div>
+
+<style>
+    .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+    }
+</style>
 {% endblock %}

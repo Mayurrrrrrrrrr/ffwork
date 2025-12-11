@@ -121,8 +121,8 @@ class FlexibleImporter:
         if not self.company or not self.company.id:
             raise ValueError("No valid company available for import. Please contact admin.")
     
-    def _parse_decimal(self, value, default=0):
-        """Safely parse decimal values"""
+    def _parse_decimal(self, value, default=0, max_value=None, decimal_places=2):
+        """Safely parse decimal values with optional max value capping"""
         if pd.isna(value) or value == '' or value is None:
             return Decimal(default)
         try:
@@ -130,7 +130,17 @@ class FlexibleImporter:
             clean_value = str(value).replace(',', '').replace('₹', '').replace(' ', '').strip()
             if clean_value == '' or clean_value == '-':
                 return Decimal(default)
-            return Decimal(clean_value)
+            result = Decimal(clean_value)
+            
+            # Cap the value if max_value is specified (to prevent Oracle ORA-01438)
+            if max_value is not None:
+                if result > Decimal(max_value):
+                    result = Decimal(max_value)
+                elif result < -Decimal(max_value):
+                    result = -Decimal(max_value)
+            
+            # Round to specified decimal places
+            return round(result, decimal_places)
         except (InvalidOperation, ValueError):
             return Decimal(default)
     
@@ -258,10 +268,10 @@ class FlexibleImporter:
                         rows_skipped += 1
                         continue
                     
-                    # Parse financial values
-                    revenue = self._parse_decimal(row.get('revenue', 0))  # Gross Amount after discount
-                    final_amount = self._parse_decimal(row.get('final_amount', 0))
-                    gross_margin = self._parse_decimal(row.get('gross_margin', 0))
+                    # Parse financial values with max value caps to prevent Oracle precision overflow
+                    revenue = self._parse_decimal(row.get('revenue', 0), max_value=9999999999999)  # Gross Amount after discount
+                    final_amount = self._parse_decimal(row.get('final_amount', 0), max_value=9999999999999)
+                    gross_margin = self._parse_decimal(row.get('gross_margin', 0), max_value=9999999999999)
                     
                     # Apply negative sign for returns
                     if tx_type == 'return':
@@ -282,20 +292,20 @@ class FlexibleImporter:
                         product_subcategory=str(row.get('product_subcategory', ''))[:100],
                         collection=str(row.get('collection', ''))[:100],
                         base_metal=str(row.get('base_metal', ''))[:50],
-                        gross_weight=self._parse_decimal(row.get('gross_weight')),
-                        net_weight=self._parse_decimal(row.get('net_weight')),
-                        free_gold_weight=self._parse_decimal(row.get('free_gold_weight')),
+                        gross_weight=self._parse_decimal(row.get('gross_weight'), max_value=9999999, decimal_places=3),
+                        net_weight=self._parse_decimal(row.get('net_weight'), max_value=9999999, decimal_places=3),
+                        free_gold_weight=self._parse_decimal(row.get('free_gold_weight'), max_value=9999999, decimal_places=3),
                         solitaire_pieces=self._parse_int(row.get('solitaire_pieces')),
-                        solitaire_weight=self._parse_decimal(row.get('solitaire_weight')),
+                        solitaire_weight=self._parse_decimal(row.get('solitaire_weight'), max_value=9999999, decimal_places=3),
                         total_diamond_pieces=self._parse_int(row.get('total_diamond_pieces')),
-                        total_diamond_weight=self._parse_decimal(row.get('total_diamond_weight')),
+                        total_diamond_weight=self._parse_decimal(row.get('total_diamond_weight'), max_value=9999999, decimal_places=3),
                         color_stone_pieces=self._parse_int(row.get('color_stone_pieces')),
-                        color_stone_weight=self._parse_decimal(row.get('color_stone_weight')),
+                        color_stone_weight=self._parse_decimal(row.get('color_stone_weight'), max_value=9999999, decimal_places=3),
                         quantity=self._parse_int(row.get('quantity', 1)) or 1,
-                        gross_amount=self._parse_decimal(row.get('gross_amount')),
-                        discount_amount=self._parse_decimal(row.get('discount_amount')),
-                        discount_percentage=self._parse_decimal(row.get('discount_percentage')),
-                        gst_amount=self._parse_decimal(row.get('gst_amount')),
+                        gross_amount=self._parse_decimal(row.get('gross_amount'), max_value=9999999999999),
+                        discount_amount=self._parse_decimal(row.get('discount_amount'), max_value=9999999999999),
+                        discount_percentage=self._parse_decimal(row.get('discount_percentage'), max_value=100),  # Cap at 100%
+                        gst_amount=self._parse_decimal(row.get('gst_amount'), max_value=9999999999999),
                         revenue=revenue,  # Gross Amount after discount - cash collected
                         final_amount=final_amount,
                         gross_margin=gross_margin,

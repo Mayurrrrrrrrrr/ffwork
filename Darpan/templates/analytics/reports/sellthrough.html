@@ -17,46 +17,163 @@
     <!-- Filters with Stock Date -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
-            <form method="get" class="row g-3 align-items-end">
+            <form method="get" id="filterForm" class="row g-3 align-items-end">
                 <div class="col-md-2">
-                    <label class="form-label small">Sales Date From</label>
+                    <label class="form-label small fw-bold">Sales Date From</label>
                     <input type="date" name="date_from" class="form-control form-control-sm"
                         value="{{ current_filters.date_from }}">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small">Sales Date To</label>
+                    <label class="form-label small fw-bold">Sales Date To</label>
                     <input type="date" name="date_to" class="form-control form-control-sm"
                         value="{{ current_filters.date_to }}">
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label small">Stock Snapshot Date</label>
+                    <label class="form-label small fw-bold">Stock Snapshot Date</label>
                     <select name="stock_date" class="form-select form-select-sm">
                         <option value="">Latest</option>
                         {% for d in available_stock_dates %}
-                        <option value="{{ d|date:'Y-m-d' }}" {% if current_filters.stock_date == d|date:"Y-m-d" %}selected{% endif %}>{{ d|date:"d M Y" }}</option>
+                        <option value="{{ d|date:'Y-m-d' }}" {% if current_filters.stock_date==d|date:"Y-m-d"
+                            %}selected{% endif %}>{{ d|date:"d M Y" }}</option>
                         {% endfor %}
                     </select>
                 </div>
+
+                <!-- Category Multi-Select -->
                 <div class="col-md-2">
-                    <label class="form-label small">Category</label>
-                    <select name="category" class="form-select form-select-sm">
-                        <option value="">All</option>
-                        {% for c in filters.categories %}<option value="{{ c }}" {% if current_filters.category == c %}selected{% endif %}>{{ c }}</option>{% endfor %}
-                    </select>
+                    <label class="form-label small fw-bold">Category</label>
+                    <div class="multi-select-dropdown" data-name="category">
+                        <button type="button" class="form-select form-select-sm text-start multi-select-btn"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="selected-text">All Categories</span>
+                        </button>
+                        <div class="dropdown-menu p-2 multi-select-menu">
+                            <div class="dropdown-options" style="max-height: 200px; overflow-y: auto;">
+                                {% for c in filters.categories %}
+                                <label class="dropdown-item d-flex align-items-center py-1">
+                                    <input type="checkbox" name="category" value="{{ c }}"
+                                        class="form-check-input me-2 mt-0" {% if c in current_filters.category
+                                        %}checked{% endif %}>
+                                    <span class="small">{{ c }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <div class="dropdown-footer border-top mt-2 pt-2 d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-secondary flex-fill"
+                                    onclick="clearSelection(this)">Clear</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Location Multi-Select -->
                 <div class="col-md-2">
-                    <label class="form-label small">Location</label>
-                    <select name="location" class="form-select form-select-sm">
-                        <option value="">All</option>
-                        {% for l in filters.locations %}<option value="{{ l }}" {% if current_filters.location == l %}selected{% endif %}>{{ l }}</option>{% endfor %}
-                    </select>
+                    <label class="form-label small fw-bold">Location</label>
+                    <div class="multi-select-dropdown" data-name="location">
+                        <button type="button" class="form-select form-select-sm text-start multi-select-btn"
+                            data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="selected-text">All Locations</span>
+                        </button>
+                        <div class="dropdown-menu p-2 multi-select-menu">
+                            <div class="dropdown-options" style="max-height: 200px; overflow-y: auto;">
+                                {% for l in filters.locations %}
+                                <label class="dropdown-item d-flex align-items-center py-1">
+                                    <input type="checkbox" name="location" value="{{ l }}"
+                                        class="form-check-input me-2 mt-0" {% if l in current_filters.location
+                                        %}checked{% endif %}>
+                                    <span class="small">{{ l }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                            <div class="dropdown-footer border-top mt-2 pt-2 d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-secondary flex-fill"
+                                    onclick="clearSelection(this)">Clear</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary btn-sm w-100">Apply</button>
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i data-lucide="filter" class="me-1" style="width: 14px; height: 14px;"></i> Apply
+                    </button>
                 </div>
             </form>
         </div>
     </div>
+
+    <style>
+        .multi-select-dropdown {
+            position: relative;
+        }
+
+        .multi-select-btn {
+            background-color: #fff;
+            border: 1px solid #ced4da;
+            cursor: pointer;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .multi-select-btn:hover {
+            border-color: #86b7fe;
+        }
+
+        .multi-select-menu {
+            min-width: 200px;
+        }
+
+        .multi-select-menu .dropdown-item {
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .multi-select-menu .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .multi-select-menu .form-check-input:checked {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+
+        .selected-badge {
+            background-color: #e7f1ff;
+            color: #0d6efd;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+        }
+    </style>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.multi-select-dropdown').forEach(dropdown => {
+                updateSelectedText(dropdown);
+                dropdown.querySelector('.multi-select-menu').addEventListener('click', e => e.stopPropagation());
+                dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+                    cb.addEventListener('change', () => updateSelectedText(dropdown));
+                });
+            });
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+
+        function updateSelectedText(dropdown) {
+            const btn = dropdown.querySelector('.multi-select-btn .selected-text');
+            const name = dropdown.dataset.name;
+            const checked = dropdown.querySelectorAll('input[type="checkbox"]:checked');
+            if (checked.length === 0) btn.textContent = 'All ' + name.charAt(0).toUpperCase() + name.slice(1) + 's';
+            else if (checked.length === 1) btn.textContent = checked[0].nextElementSibling.textContent.trim();
+            else btn.innerHTML = `<span class="selected-badge">${checked.length} selected</span>`;
+        }
+
+        function clearSelection(btn) {
+            const dropdown = btn.closest('.multi-select-dropdown');
+            dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateSelectedText(dropdown);
+        }
+    </script>
 
     <!-- By Category -->
     <div class="card border-0 shadow-sm mb-4">
@@ -85,7 +202,9 @@
                             <td class="text-end">{{ c.stock_qty|default:0 }}</td>
                             <td class="text-end">₹{{ c.stock_value|floatformat:0|default:0 }}</td>
                             <td class="text-end">
-                                <span class="badge {% if c.sellthrough_pct >= 50 %}bg-success{% elif c.sellthrough_pct >= 25 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ c.sellthrough_pct }}%</span>
+                                <span
+                                    class="badge {% if c.sellthrough_pct >= 50 %}bg-success{% elif c.sellthrough_pct >= 25 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{
+                                    c.sellthrough_pct }}%</span>
                             </td>
                         </tr>
                         {% empty %}
@@ -126,7 +245,9 @@
                             <td class="text-end">{{ s.stock_qty|default:0 }}</td>
                             <td class="text-end">₹{{ s.stock_value|floatformat:0|default:0 }}</td>
                             <td class="text-end">
-                                <span class="badge {% if s.sellthrough_pct >= 50 %}bg-success{% elif s.sellthrough_pct >= 25 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{ s.sellthrough_pct }}%</span>
+                                <span
+                                    class="badge {% if s.sellthrough_pct >= 50 %}bg-success{% elif s.sellthrough_pct >= 25 %}bg-warning text-dark{% else %}bg-danger{% endif %}">{{
+                                    s.sellthrough_pct }}%</span>
                             </td>
                         </tr>
                         {% endfor %}
