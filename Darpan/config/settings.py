@@ -197,6 +197,9 @@ SESSION_COOKIE_SAMESITE = 'Lax'
 # Base URL for the application
 BASE_URL = config('BASE_URL', default='http://localhost:8000')
 
+# Allow iframe embedding for PDF/document viewers in lessons
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
 
 # =============================================================================
 # PRODUCTION SECURITY SETTINGS
