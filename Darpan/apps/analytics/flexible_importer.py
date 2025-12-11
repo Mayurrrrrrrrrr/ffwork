@@ -33,6 +33,7 @@ class FlexibleImporter:
         'LU': 'return',    # Return - negative
         'RI': 'ignore',    # Ignore completely
         'RR': 'ignore',    # Ignore completely
+        'GE': 'ignore',    # Ignore completely (stock order/internal)
     }
     
     # Sales CSV column mapping
@@ -62,10 +63,13 @@ class FlexibleImporter:
         'SALES EXU': 'sales_person',
         'Discount': 'discount_amount',
         'Original selling price': 'gross_amount',
+        'Original Selling Price': 'gross_amount',  # Alternative capitalization
         'Discount (Percentage)': 'discount_percentage',
         'Discount (Amount)': 'discount_amount_alt',
         'Gross Amount after discount': 'revenue',
+        'Net Amount after discount': 'revenue',  # Alternative column name
         'GST': 'gst_amount',
+        'GSt': 'gst_amount',  # Alternative capitalization
         'Final Amount (with GST)': 'final_amount',
         'Gross Margin': 'gross_margin',
         'PANNO': 'pan_no',
@@ -161,9 +165,22 @@ class FlexibleImporter:
         if pd.isna(value) or value == '' or value is None:
             return None
         
+        # Handle pandas Timestamp
+        if isinstance(value, pd.Timestamp):
+            return value.date()
+        
+        # Handle Python datetime
         if isinstance(value, datetime):
             return value.date()
         
+        # Handle date objects
+        if hasattr(value, 'date') and callable(getattr(value, 'date')):
+            try:
+                return value.date()
+            except:
+                pass
+        
+        # Try string parsing
         for fmt in formats:
             try:
                 return datetime.strptime(str(value).strip(), fmt).date()
@@ -184,22 +201,27 @@ class FlexibleImporter:
         mapped = []
         unmapped = []
         rename_map = {}
+        mapped_targets = set()  # Track which target fields already have a mapping
+        mapped_sources = set()  # Track which source columns already mapped
         
         df_cols_lower = {col.lower().strip(): col for col in df.columns}
         
         for source_col, target_field in column_map.items():
+            # Skip if this target field is already mapped (prevent duplicates)
+            if target_field in mapped_targets:
+                continue
+                
             source_lower = source_col.lower().strip()
+            # Only do exact (case-insensitive) matching - no partial match
             if source_lower in df_cols_lower:
                 original_col = df_cols_lower[source_lower]
+                # Also skip if this source column was already used for a different target
+                if original_col in mapped_sources:
+                    continue
                 rename_map[original_col] = target_field
+                mapped_targets.add(target_field)
+                mapped_sources.add(original_col)
                 mapped.append(source_col)
-            else:
-                # Try partial match
-                for df_col_lower, df_col_orig in df_cols_lower.items():
-                    if source_lower in df_col_lower or df_col_lower in source_lower:
-                        rename_map[df_col_orig] = target_field
-                        mapped.append(source_col)
-                        break
         
         # Find unmapped columns
         mapped_originals = set(rename_map.keys())
@@ -228,13 +250,18 @@ class FlexibleImporter:
             rename_map, mapped, unmapped = self._map_columns(df, self.SALES_COLUMN_MAP)
             df = df.rename(columns=rename_map)
             
-            # Get existing transaction numbers for this company to detect duplicates
-            existing_tx_numbers = set(
-                SalesRecord.objects.filter(company=self.company)
-                .exclude(transaction_no='')
-                .exclude(transaction_no__isnull=True)
-                .values_list('transaction_no', flat=True)
-            )
+            # Debug: Log column mapping result
+            logger.info(f"Columns after mapping: {list(df.columns)[:15]}")
+            logger.info(f"'transaction_date' in columns: {'transaction_date' in df.columns}")
+            if 'transaction_date' in df.columns:
+                logger.info(f"First tx_date value: {df['transaction_date'].iloc[0]}, type: {type(df['transaction_date'].iloc[0])}")
+            
+            # Get existing unique keys (tx_no|jewel_code) for this company to detect duplicates
+            existing_tx_numbers = set()
+            for tx, jc in SalesRecord.objects.filter(company=self.company).exclude(
+                transaction_no='').exclude(transaction_no__isnull=True).values_list(
+                'transaction_no', 'jewel_code'):
+                existing_tx_numbers.add(f"{tx}|{jc}")
             
             rows_imported = 0
             rows_skipped = 0
@@ -256,15 +283,23 @@ class FlexibleImporter:
                         rows_ignored += 1
                         continue
                     
-                    # Skip duplicate transactions (already in DB or in this import batch)
-                    if tx_no_str and (tx_no_str in existing_tx_numbers or tx_no_str in new_tx_numbers):
+                    # Build unique key for duplicate detection: tx_no + jewel_code
+                    # This allows multiple items per transaction (different jewel codes)
+                    jewel_code = str(row.get('jewel_code', '')).strip()
+                    unique_key = f"{tx_no_str}|{jewel_code}" if tx_no_str and jewel_code else ''
+                    
+                    # Skip only if exact same transaction + item already exists
+                    if unique_key and (unique_key in existing_tx_numbers or unique_key in new_tx_numbers):
                         rows_duplicate += 1
                         continue
                     
-                    # Parse transaction date
-                    tx_date = self._parse_date(row.get('transaction_date'))
+                    # Parse transaction date - with debug logging
+                    raw_date = row.get('transaction_date')
+                    tx_date = self._parse_date(raw_date)
                     if not tx_date:
-                        self.warnings.append(f"Row {idx + 2}: Invalid date, skipping")
+                        # Debug: log more details about the failed date
+                        logger.error(f"Row {idx + 2}: Failed to parse date. Value={raw_date}, Type={type(raw_date)}")
+                        self.warnings.append(f"Row {idx + 2}: Invalid date '{raw_date}' (type={type(raw_date).__name__}), skipping")
                         rows_skipped += 1
                         continue
                     
@@ -317,14 +352,18 @@ class FlexibleImporter:
                         created_by=self.user,
                     )
                     records_to_create.append(record)
-                    # Track this transaction number to prevent duplicates within same import
-                    if tx_no_str:
-                        new_tx_numbers.add(tx_no_str)
+                    # Track this unique key to prevent duplicates within same import
+                    if unique_key:
+                        new_tx_numbers.add(unique_key)
                     rows_imported += 1
                     
                 except Exception as e:
+                    logger.error(f"Row {idx + 2}: Exception - {str(e)}")
                     self.warnings.append(f"Row {idx + 2}: {str(e)}")
                     rows_skipped += 1
+            
+            # Debug: Log summary before bulk create
+            logger.info(f"Import summary: records_to_create={len(records_to_create)}, rows_imported={rows_imported}, rows_skipped={rows_skipped}, rows_duplicate={rows_duplicate}, rows_ignored={rows_ignored}")
             
             # Bulk create
             if records_to_create:

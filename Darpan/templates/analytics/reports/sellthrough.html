@@ -33,8 +33,10 @@
                     <select name="stock_date" class="form-select form-select-sm">
                         <option value="">Latest</option>
                         {% for d in available_stock_dates %}
-                        <option value="{{ d|date:'Y-m-d' }}" {% if current_filters.stock_date==d|date:"Y-m-d"
-                            %}selected{% endif %}>{{ d|date:"d M Y" }}</option>
+                        {% with d_str=d|date:"Y-m-d" %}
+                        <option value="{{ d_str }}" {% if current_filters.stock_date==d_str %}selected{% endif %}>{{
+                            d|date:"d M Y" }}</option>
+                        {% endwith %}
                         {% endfor %}
                     </select>
                 </div>

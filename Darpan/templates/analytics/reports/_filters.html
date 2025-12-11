@@ -30,8 +30,7 @@
                             {% for c in filters.categories %}
                             <label class="dropdown-item d-flex align-items-center py-1">
                                 <input type="checkbox" name="category" value="{{ c }}"
-                                    class="form-check-input me-2 mt-0" {% if c in current_filters.category %}checked{%
-                                    endif %}>
+                                    class="form-check-input me-2 mt-0" {% if c in current_filters.category %}checked{% endif %}>
                                 <span class="small">{{ c }}</span>
                             </label>
                             {% endfor %}
@@ -63,8 +62,7 @@
                             {% for l in filters.locations %}
                             <label class="dropdown-item d-flex align-items-center py-1">
                                 <input type="checkbox" name="location" value="{{ l }}"
-                                    class="form-check-input me-2 mt-0" {% if l in current_filters.location %}checked{%
-                                    endif %}>
+                                    class="form-check-input me-2 mt-0" {% if l in current_filters.location %}checked{% endif %}>
                                 <span class="small">{{ l }}</span>
                             </label>
                             {% endfor %}
