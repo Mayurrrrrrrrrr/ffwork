@@ -177,8 +177,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const isCompleted = {{ is_completed| yesno: "true,false"
-    }};
+        const isCompleted = {{ is_completed|yesno:"true,false" }};
     const lessonType = '{{ lesson.content_type }}';
 
     const completeForm = document.getElementById('complete-form');
