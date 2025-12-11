@@ -13,6 +13,7 @@ from django.urls import reverse_lazy
 
 from .models import (Course, Module, Lesson, Quiz, Question, UserCourseProgress, 
                       UserLessonProgress, UserQuizAttempt, CourseCertificate)
+from apps.core.models import User # Imported User model
 from .forms import CourseForm, ModuleForm, LessonForm
 from apps.core.utils import log_audit_action
 
@@ -136,9 +137,9 @@ class CourseDetailView(LoginRequiredMixin, DetailView):
         course = self.object
         
         # Permissions
-        context['can_add_module'] = user.is_superuser or \
-                                    user.has_role('admin') or \
-                                    user.has_role('trainer')
+        is_trainer = user.is_superuser or user.has_role('admin') or user.has_role('trainer')
+        context['can_add_module'] = is_trainer
+        context['can_assign_course'] = is_trainer
         
         # Get or create progress record
         progress, created = UserCourseProgress.objects.get_or_create(user=user, course=course)
@@ -159,12 +160,52 @@ class CourseDetailView(LoginRequiredMixin, DetailView):
         
         context['modules'] = modules
         context['completed_lesson_ids'] = set(completed_lesson_ids)
+
+        # If user is trainer, fetch all company users for assignment dropdown
+        if is_trainer and user.company:
+            # Exclude users who are already assigned/started? 
+            # Ideally show all, and if assigned just update or show status.
+            # For simplicity, fetching all active users in company.
+            context['company_users'] = User.objects.filter(
+                company=user.company, 
+                is_active=True
+            ).exclude(id=user.id).order_by('full_name')
         
         return context
 
+class AssignCourseView(LoginRequiredMixin, TrainerRequiredMixin, View):
+    """
+    Assign a course to a specific user.
+    """
+    def post(self, request, pk):
+        course = get_object_or_404(Course, pk=pk, company=request.user.company)
+        user_id = request.POST.get('user_id')
+        
+        if not user_id:
+            messages.error(request, "Please select a user.")
+            return redirect('learning:course_detail', pk=pk)
+            
+        try:
+            target_user = User.objects.get(id=user_id, company=request.user.company)
+            # Create progress record if it doesn't exist
+            progress, created = UserCourseProgress.objects.get_or_create(
+                user=target_user, 
+                course=course
+            )
+            if created:
+                messages.success(request, f"Course assigned to {target_user.full_name}.")
+            else:
+                messages.info(request, f"{target_user.full_name} is already assigned to this course (Status: {progress.get_status_display()}).")
+                
+        except User.DoesNotExist:
+            messages.error(request, "User not found.")
+            
+        return redirect('learning:course_detail', pk=pk)
+
 class LessonView(LoginRequiredMixin, DetailView):
     """
-    View for learning content (Video/Text).
+    View for learning content (Video/Text/PDF/Documents).
+    Displays content inline without downloads.
     """
     model = Lesson
     template_name = 'learning/lesson.html'
@@ -185,18 +226,26 @@ class LessonView(LoginRequiredMixin, DetailView):
             course_progress.status = 'in_progress'
             course_progress.save()
             
-        # Check if completed
+        # Check if current lesson is completed
         is_completed = UserLessonProgress.objects.filter(user=user, lesson=lesson, completed=True).exists()
         context['is_completed'] = is_completed
         
-        # Navigation: Next/Prev lesson
-        # Simplified logic: just get next by order
-        # In real app, need to handle module transitions
+        # Get all completed lesson IDs for sidebar display
+        completed_lesson_ids = list(
+            UserLessonProgress.objects.filter(
+                user=user, 
+                lesson__module__course=course, 
+                completed=True
+            ).values_list('lesson_id', flat=True)
+        )
+        context['completed_lesson_ids'] = completed_lesson_ids
         
         return context
     
     def post(self, request, *args, **kwargs):
         """Mark lesson as complete."""
+        from django.http import JsonResponse
+        
         lesson = self.get_object()
         user = request.user
         
@@ -209,9 +258,12 @@ class LessonView(LoginRequiredMixin, DetailView):
             # Update course progress
             course_progress = UserCourseProgress.objects.get(user=user, course=lesson.module.course)
             course_progress.update_progress()
+        
+        # Handle AJAX requests
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'status': 'success', 'completed': True})
             
-            messages.success(request, "Lesson completed!")
-            
+        messages.success(request, "Lesson completed!")
         return redirect('learning:course_detail', pk=lesson.module.course.pk)
 
 class QuizView(LoginRequiredMixin, DetailView):
@@ -370,4 +422,3 @@ class LeaderboardView(LoginRequiredMixin, ListView):
                 break
         
         return context
-

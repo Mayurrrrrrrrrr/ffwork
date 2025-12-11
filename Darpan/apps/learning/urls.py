@@ -11,6 +11,7 @@ urlpatterns = [
     path('', views.CourseListView.as_view(), name='catalog'),
     path('course/create/', views.CourseCreateView.as_view(), name='course_create'),
     path('course/<int:pk>/', views.CourseDetailView.as_view(), name='course_detail'),
+    path('course/<int:pk>/assign/', views.AssignCourseView.as_view(), name='assign_course'),
     path('course/<int:pk>/module/create/', views.ModuleCreateView.as_view(), name='module_create'),
     path('lesson/<int:pk>/', views.LessonView.as_view(), name='lesson'),
     path('module/<int:module_pk>/lesson/create/', views.LessonCreateView.as_view(), name='lesson_create'),

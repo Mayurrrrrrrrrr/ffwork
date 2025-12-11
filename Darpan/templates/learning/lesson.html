@@ -7,10 +7,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container-fluid mt-4">
     <div class="row">
         <!-- Content Area -->
-        <div class="col-lg-8">
+        <div class="col-lg-9">
             <nav aria-label="breadcrumb" class="mb-3">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{% url 'learning:catalog' %}">Catalog</a></li>
@@ -21,11 +21,30 @@
             </nav>
 
             <div class="card shadow-sm mb-4">
-                <div class="card-body p-4">
-                    <h2 class="mb-4">{{ lesson.title }}</h2>
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                    <h4 class="mb-0">
+                        <i data-lucide="book-open" class="me-2" style="width:24px;"></i>
+                        {{ lesson.title }}
+                    </h4>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="badge bg-{{ is_completed|yesno:'success,secondary' }}" id="completion-badge">
+                            {% if is_completed %}
+                            <i data-lucide="check-circle" style="width:14px;height:14px;" class="me-1"></i> Completed
+                            {% else %}
+                            <i data-lucide="clock" style="width:14px;height:14px;" class="me-1"></i> In Progress
+                            {% endif %}
+                        </span>
+                        <span class="badge bg-light text-dark border">
+                            <i data-lucide="timer" style="width:12px;height:12px;" class="me-1"></i>
+                            {{ lesson.duration_minutes }} min
+                        </span>
+                    </div>
+                </div>
 
-                    {% if lesson.content_type  ==  'video' %}
-                    <div class="ratio ratio-16x9 mb-4 bg-dark rounded">
+                <div class="card-body p-0" id="lesson-content">
+                    {% if lesson.content_type == 'video' %}
+                    <!-- Video Content -->
+                    <div class="ratio ratio-16x9 bg-dark">
                         {% if lesson.video_url %}
                         <iframe src="{{ lesson.video_url }}" title="Video player" allowfullscreen></iframe>
                         {% else %}
@@ -34,61 +53,117 @@
                         </div>
                         {% endif %}
                     </div>
+                    {% if lesson.text_content %}
+                    <div class="p-4 lesson-text-content">
+                        {{ lesson.text_content|linebreaks }}
+                    </div>
                     {% endif %}
 
-                    <div class="lesson-content">
+                    {% elif lesson.content_type == 'text' %}
+                    <!-- Text/Article Content -->
+                    <div class="p-4 lesson-text-content" style="max-height: 70vh; overflow-y: auto;"
+                        id="scrollable-content">
                         {{ lesson.text_content|linebreaks }}
                     </div>
 
-                    {% if lesson.file_upload %}
-                    <div class="mt-4 p-3 bg-light rounded border d-flex align-items-center">
-                        <i data-lucide="file" class="me-3 text-primary" style="width:32px;height:32px;"></i>
-                        <div>
-                            <h6 class="mb-0">Attached Material</h6>
-                            <a href="{{ lesson.file_upload.url }}" target="_blank" class="text-decoration-none">Download
-                                File</a>
+                    {% elif lesson.content_type == 'pdf' and lesson.file_upload %}
+                    <!-- PDF Content - Embedded Viewer -->
+                    <div style="height: 80vh;">
+                        <iframe src="{{ lesson.file_upload.url }}#toolbar=0&navpanes=0&scrollbar=1" width="100%"
+                            height="100%" style="border: none;" title="PDF Document">
+                        </iframe>
+                    </div>
+
+                    {% elif lesson.content_type in 'word,ppt' and lesson.file_upload %}
+                    <!-- Word/PPT Content - Google Docs Viewer -->
+                    <div style="height: 80vh;">
+                        <iframe
+                            src="https://docs.google.com/gview?url={{ request.build_absolute_uri }}{{ lesson.file_upload.url|urlencode }}&embedded=true"
+                            width="100%" height="100%" style="border: none;" title="Document Viewer">
+                        </iframe>
+                        <div class="p-3 bg-light border-top text-center">
+                            <small class="text-muted">
+                                <i data-lucide="info" style="width:14px;height:14px;" class="me-1"></i>
+                                If the document doesn't load, please wait a moment or refresh the page.
+                            </small>
                         </div>
+                    </div>
+
+                    {% elif lesson.content_type == 'html' and lesson.file_upload %}
+                    <!-- HTML Content -->
+                    <div style="height: 80vh;">
+                        <iframe src="{{ lesson.file_upload.url }}" width="100%" height="100%" style="border: none;"
+                            sandbox="allow-same-origin allow-scripts" title="HTML Content">
+                        </iframe>
+                    </div>
+
+                    {% else %}
+                    <!-- Fallback: No content or unsupported type -->
+                    <div class="p-5 text-center text-muted">
+                        <i data-lucide="file-question" style="width:64px;height:64px;" class="mb-3 opacity-50"></i>
+                        <h5>Content Not Available</h5>
+                        <p>This lesson's content could not be displayed.</p>
                     </div>
                     {% endif %}
                 </div>
-                <div class="card-footer bg-white p-3 d-flex justify-content-between align-items-center">
-                    <a href="{% url 'learning:course_detail' lesson.module.course.pk %}"
-                        class="btn btn-outline-secondary">
-                        <i data-lucide="arrow-left" class="me-1"></i> Back to Course
-                    </a>
 
-                    {% if not is_completed %}
-                    <form method="post">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-success px-4">
-                            Mark as Complete <i data-lucide="check" class="ms-1"></i>
-                        </button>
-                    </form>
-                    {% else %}
-                    <button class="btn btn-success disabled">
-                        Completed <i data-lucide="check-circle" class="ms-1"></i>
-                    </button>
-                    {% endif %}
+                <div class="card-footer bg-white p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'learning:course_detail' lesson.module.course.pk %}"
+                            class="btn btn-outline-secondary">
+                            <i data-lucide="arrow-left" class="me-1" style="width:16px;height:16px;"></i> Back to Course
+                        </a>
+
+                        <div class="d-flex align-items-center gap-3">
+                            <!-- Progress indicator -->
+                            <div id="progress-indicator" class="text-muted small">
+                                <span id="progress-text">Scroll to complete this lesson</span>
+                            </div>
+
+                            <!-- Manual complete button (shows only if not auto-completed) -->
+                            {% if not is_completed %}
+                            <form method="post" id="complete-form" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-success px-4" id="complete-btn">
+                                    <i data-lucide="check" class="me-1" style="width:16px;height:16px;"></i>
+                                    Mark Complete
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="btn btn-success disabled">
+                                <i data-lucide="check-circle" class="me-1" style="width:16px;height:16px;"></i>
+                                Completed
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Sidebar Navigation -->
-        <div class="col-lg-4">
-            <div class="card shadow-sm">
+        <div class="col-lg-3">
+            <div class="card shadow-sm sticky-top" style="top: 80px;">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Course Content</h5>
+                    <h6 class="mb-0">
+                        <i data-lucide="list" class="me-1" style="width:16px;height:16px;"></i>
+                        Course Content
+                    </h6>
                 </div>
-                <div class="list-group list-group-flush">
+                <div class="list-group list-group-flush" style="max-height: 60vh; overflow-y: auto;">
                     {% for mod in lesson.module.course.modules.all %}
-                    <div class="list-group-item bg-light fw-bold">{{ mod.title }}</div>
+                    <div class="list-group-item bg-light fw-bold small py-2">{{ mod.title }}</div>
                     {% for l in mod.lessons.all %}
                     <a href="{% url 'learning:lesson' l.pk %}"
-                        class="list-group-item list-group-item-action {% if l  ==  lesson %}active{% endif %}">
+                        class="list-group-item list-group-item-action py-2 {% if l == lesson %}active{% endif %}">
                         <div class="d-flex align-items-center">
-                            <i data-lucide="{% if l.content_type  ==  'video' %}play-circle{% else %}file-text{% endif %}"
-                                style="width:14px;height:14px;" class="me-2 opacity-75"></i>
-                            <span class="text-truncate">{{ l.title }}</span>
+                            {% if l.id in completed_lesson_ids %}
+                            <i data-lucide="check-circle" style="width:14px;height:14px;" class="me-2 text-success"></i>
+                            {% else %}
+                            <i data-lucide="{% if l.content_type == 'video' %}play-circle{% elif l.content_type == 'pdf' %}file-text{% else %}file{% endif %}"
+                                style="width:14px;height:14px;" class="me-2 opacity-50"></i>
+                            {% endif %}
+                            <span class="text-truncate small">{{ l.title }}</span>
                         </div>
                     </a>
                     {% endfor %}
@@ -98,4 +173,89 @@
         </div>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const isCompleted = {{ is_completed| yesno: 'true,false'
+    }};
+    const lessonType = '{{ lesson.content_type }}';
+    const completeForm = document.getElementById('complete-form');
+    const progressText = document.getElementById('progress-text');
+    const completeBadge = document.getElementById('completion-badge');
+
+    if (isCompleted) {
+        if (progressText) progressText.textContent = 'Lesson completed!';
+        return;
+    }
+
+    let timeSpent = 0;
+    const requiredTime = 30; // 30 seconds minimum for documents
+    let hasCompleted = false;
+
+    // Timer for document-type lessons
+    if (['pdf', 'word', 'ppt', 'html'].includes(lessonType)) {
+        const timer = setInterval(function () {
+            timeSpent++;
+            const remaining = requiredTime - timeSpent;
+
+            if (remaining > 0) {
+                if (progressText) progressText.textContent = `Stay on page: ${remaining}s remaining`;
+            } else {
+                clearInterval(timer);
+                autoComplete();
+            }
+        }, 1000);
+    }
+
+    // Scroll tracking for text content
+    const scrollableContent = document.getElementById('scrollable-content');
+    if (scrollableContent && lessonType === 'text') {
+        scrollableContent.addEventListener('scroll', function () {
+            const scrollPercentage = (scrollableContent.scrollTop + scrollableContent.clientHeight) / scrollableContent.scrollHeight * 100;
+            if (progressText) progressText.textContent = `Read: ${Math.round(scrollPercentage)}%`;
+
+            if (scrollPercentage >= 80 && !hasCompleted) {
+                autoComplete();
+            }
+        });
+    }
+
+    function autoComplete() {
+        if (hasCompleted) return;
+        hasCompleted = true;
+
+        if (progressText) progressText.textContent = 'Completing...';
+
+        // Submit the form via AJAX
+        if (completeForm) {
+            const formData = new FormData(completeForm);
+            fetch(window.location.href, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).then(response => {
+                if (response.ok) {
+                    if (progressText) progressText.textContent = 'Lesson completed!';
+                    if (completeBadge) {
+                        completeBadge.className = 'badge bg-success';
+                        completeBadge.innerHTML = '<i data-lucide="check-circle" style="width:14px;height:14px;" class="me-1"></i> Completed';
+                        lucide.createIcons();
+                    }
+                    // Hide the complete button
+                    const completeBtn = document.getElementById('complete-btn');
+                    if (completeBtn) {
+                        completeBtn.classList.add('disabled');
+                        completeBtn.innerHTML = '<i data-lucide="check-circle" class="me-1" style="width:16px;height:16px;"></i> Completed';
+                        lucide.createIcons();
+                    }
+                }
+            }).catch(err => {
+                console.error('Error completing lesson:', err);
+            });
+        }
+    }
+});
+</script>
 {% endblock %}
